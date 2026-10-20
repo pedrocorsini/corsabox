@@ -1,4 +1,4 @@
-package com.corsini.corsabox.identity.api;
+package com.corsini.corsabox.identity.api.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -8,5 +8,6 @@ public record RegisterUserRequest(
     @NotBlank String firstName,
     @NotBlank String lastName,
     @NotBlank @Size(min = 3, max = 20) String username,
-    @NotBlank @Email String email
+    @NotBlank @Email String email,
+    @NotBlank @Size(min = 8, max = 72) String password
 ) {}

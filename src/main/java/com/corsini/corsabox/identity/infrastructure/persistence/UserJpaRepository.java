@@ -2,6 +2,10 @@ package com.corsini.corsabox.identity.infrastructure.persistence;
 
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import com.corsini.corsabox.identity.domain.User;
@@ -25,6 +29,7 @@ public class UserJpaRepository implements UserRepository {
         entity.setLastName(user.getLastName());
         entity.setUsername(user.getUsername());
         entity.setEmail(user.getEmail());
+        entity.setPasswordHash(user.getPasswordHash());
         entity.setCreatedOn(user.getCreatedAt());
         
         return entity;
@@ -37,6 +42,7 @@ public class UserJpaRepository implements UserRepository {
             entity.getUsername(), 
             entity.getFirstName(), 
             entity.getLastName(), 
+            entity.getPasswordHash(),
             entity.getCreatedOn());
     }
 
@@ -61,5 +67,11 @@ public class UserJpaRepository implements UserRepository {
     public boolean existsByUsername(String username) {
         return springDataUserRepository.existsByUsername(username.strip().toLowerCase());
     }
-    
+
+    @Override
+    public Page<User> findAll(Pageable pageable) {
+        var sorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+                Sort.by("createdOn").descending());
+        return springDataUserRepository.findAll(sorted).map(UserJpaRepository::toDomain);
+    }
 }

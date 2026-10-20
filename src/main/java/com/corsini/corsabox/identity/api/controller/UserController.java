@@ -1,0 +1,55 @@
+package com.corsini.corsabox.identity.api.controller;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.corsini.corsabox.identity.api.request.RegisterUserRequest;
+import com.corsini.corsabox.identity.api.response.UserResponse;
+import com.corsini.corsabox.identity.api.response.UserSummaryResponse;
+import com.corsini.corsabox.identity.application.dto.RegisterUserCommand;
+import com.corsini.corsabox.identity.application.service.ListUserUseCase;
+import com.corsini.corsabox.identity.application.service.RegisterUserUseCase;
+
+import jakarta.validation.Valid;
+
+@RestController 
+@RequestMapping("/api/users")
+public class UserController {
+    private final RegisterUserUseCase registerUser;
+    private final ListUserUseCase listUsers;
+
+
+    public UserController(RegisterUserUseCase registerUser, ListUserUseCase listUsers) {
+        this.registerUser = registerUser;
+        this.listUsers = listUsers;
+    }
+
+    @PostMapping
+    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterUserRequest request) {
+        var command = new RegisterUserCommand(
+            request.firstName(),
+            request.lastName(),
+            request.username(),
+            request.email(),
+            request.password());   
+
+        var user = registerUser.execute(command);
+        return ResponseEntity.status(HttpStatus.CREATED).body(UserResponse.from(user));
+    }
+
+    @GetMapping
+    public Page<UserSummaryResponse> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        var pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100));
+        return listUsers.execute(pageable).map(UserSummaryResponse::from);
+    }
+} 

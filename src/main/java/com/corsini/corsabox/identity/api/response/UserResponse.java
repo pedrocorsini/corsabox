@@ -1,4 +1,4 @@
-package com.corsini.corsabox.identity.api;
+package com.corsini.corsabox.identity.api.response;
 
 import java.time.Instant;
 import java.util.UUID;

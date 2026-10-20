@@ -16,28 +16,31 @@ public class User {
     private String lastName;
     private String username;
     private final Instant createdAt;
+    private final String passwordHash; // pode ser null
 
-    private User(UserId id, String email, String username, String firstName, String lastName, Instant createdAt) {
+    private User(UserId id, String email, String username, String firstName, String lastName, String passwordHash, Instant createdAt) {
         this.id = id;
         this.email = email;
         this.username = username;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.passwordHash = passwordHash;
         this.createdAt = createdAt;
     }
 
-    public static User register(String email, String username, String firstName, String lastName) {
+    public static User register(String email, String username, String firstName, String lastName, String passwordHash) {
         return new User(
             new UserId(), 
             requireText(email, "Email").toLowerCase(), 
             normalizeUsername(username), 
             requireText(firstName, "First Name"), 
             requireText(lastName, "Last Name"), 
+            passwordHash,
             Instant.now());
     }
 
-    public static User restore(UserId id, String email, String username, String firstName, String lastName, Instant createdAt) {
-        return new User(id, email, username, firstName, lastName, createdAt);
+    public static User restore(UserId id, String email, String username, String firstName, String lastName, String passwordHash, Instant createdAt) {
+        return new User(id, email, username, firstName, lastName, passwordHash, createdAt);
     }
 
     public void changeUsername(String newUsername) {

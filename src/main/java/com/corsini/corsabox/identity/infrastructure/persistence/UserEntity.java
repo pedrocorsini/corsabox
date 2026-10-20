@@ -44,6 +44,9 @@ public class UserEntity {
     @Column(nullable = false, updatable = false)
     private Instant createdOn;
 
+    @Column
+    private String passwordHash;
+
     @PrePersist 
     public void prePersist(){
         if(id == null){
