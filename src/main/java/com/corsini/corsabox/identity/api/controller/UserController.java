@@ -1,9 +1,13 @@
 package com.corsini.corsabox.identity.api.controller;
 
+import java.util.UUID;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,21 +19,25 @@ import com.corsini.corsabox.identity.api.request.RegisterUserRequest;
 import com.corsini.corsabox.identity.api.response.UserResponse;
 import com.corsini.corsabox.identity.api.response.UserSummaryResponse;
 import com.corsini.corsabox.identity.application.dto.RegisterUserCommand;
+import com.corsini.corsabox.identity.application.service.GetCurrentUserUseCase;
 import com.corsini.corsabox.identity.application.service.ListUserUseCase;
 import com.corsini.corsabox.identity.application.service.RegisterUserUseCase;
 
 import jakarta.validation.Valid;
+
 
 @RestController 
 @RequestMapping("/api/users")
 public class UserController {
     private final RegisterUserUseCase registerUser;
     private final ListUserUseCase listUsers;
+    private final GetCurrentUserUseCase getCurrentUser;
 
 
-    public UserController(RegisterUserUseCase registerUser, ListUserUseCase listUsers) {
+    public UserController(RegisterUserUseCase registerUser, ListUserUseCase listUsers, GetCurrentUserUseCase getCurrentUser) {
         this.registerUser = registerUser;
         this.listUsers = listUsers;
+        this.getCurrentUser = getCurrentUser;
     }
 
     @PostMapping
@@ -51,5 +59,10 @@ public class UserController {
             @RequestParam(defaultValue = "20") int size) {
         var pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100));
         return listUsers.execute(pageable).map(UserSummaryResponse::from);
+    }
+
+    @GetMapping("/me")
+    public UserResponse me(@AuthenticationPrincipal Jwt jwt) {
+        return UserResponse.from(getCurrentUser.execute(UUID.fromString(jwt.getSubject())));
     }
 } 
