@@ -1,22 +1,23 @@
 package com.corsini.corsabox.identity.domain;
 
 import java.time.Instant;
+import java.util.regex.Pattern;
 
 import lombok.Getter;
 
 @Getter 
 public class User {
 
-    // User Attributes
+    private static final Pattern USERNAME = Pattern.compile("^[a-z0-9_]{3,20}$");
+    
     private final UserId id;
-    private final Email email;
+    private final String email;
     private String firstName;
     private String lastName;
-    private Username username;
+    private String username;
     private final Instant createdAt;
 
-    // User Constructor 
-    public User(UserId id, Email email, Username username, String firstName, String lastName, Instant createdAt) {
+    private User(UserId id, String email, String username, String firstName, String lastName, Instant createdAt) {
         this.id = id;
         this.email = email;
         this.username = username;
@@ -25,22 +26,22 @@ public class User {
         this.createdAt = createdAt;
     }
 
-    public static User register(Email email, Username username, String firstName, String lastName) {
+    public static User register(String email, String username, String firstName, String lastName) {
         return new User(
             new UserId(), 
-            email, 
-            username, 
+            requireText(email, "Email").toLowerCase(), 
+            normalizeUsername(username), 
             requireText(firstName, "First Name"), 
             requireText(lastName, "Last Name"), 
             Instant.now());
     }
 
-    public static User restore(UserId id, Email email, Username username, String firstName, String lastName, Instant createdAt) {
+    public static User restore(UserId id, String email, String username, String firstName, String lastName, Instant createdAt) {
         return new User(id, email, username, firstName, lastName, createdAt);
     }
 
-    public void changeUsername(Username newUsername) {
-        this.username = newUsername;
+    public void changeUsername(String newUsername) {
+        this.username = normalizeUsername(newUsername);
     }
 
     public void changeName(String firstName, String lastName) {
@@ -53,6 +54,13 @@ public class User {
             throw new IllegalArgumentException(field + " it is mandatory!");
         return value.strip();
     }
+
+    private static String normalizeUsername(String value) {
+        String username = requireText(value, "Username").toLowerCase();
+        if (!USERNAME.matcher(username).matches())
+            throw new IllegalArgumentException("Invalid username");
+    return username;
+}
 }
     
 

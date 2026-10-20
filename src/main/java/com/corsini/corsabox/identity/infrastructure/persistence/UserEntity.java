@@ -1,4 +1,4 @@
-package com.corsini.corsabox.identity.infrastructure.entity;
+package com.corsini.corsabox.identity.infrastructure.persistence;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -7,14 +7,19 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 
 @Entity 
-@Data 
-@RequiredArgsConstructor 
+@Table(name = "users")
+@Getter 
+@Setter 
+@NoArgsConstructor  
 public class UserEntity {
     @Id 
     private UUID id;
