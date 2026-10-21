@@ -1,17 +1,8 @@
 import { Link } from 'react-router'
 import { useAuth } from '../auth/AuthContext'
 import { Brand } from '../components/Brand'
+import type { CatalogItem } from '../lib/catalog'
 import { useScrollEffects } from '../lib/motion'
-
-// TODO TMDB: quando a API existir, defina o contrato real aqui e troque `items`
-// pelo resultado de uma chamada em lib/api.ts (por exemplo api.catalog.search).
-export type CatalogItem = {
-  id: number
-  title: string
-  kind: 'movie' | 'tv' | 'anime'
-  year?: number
-  posterUrl?: string
-}
 
 export default function CatalogPage() {
   const { user, logout } = useAuth()

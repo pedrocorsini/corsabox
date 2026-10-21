@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { useAuth } from '../auth/AuthContext'
+import { Brand } from '../components/Brand'
 import { LiveDiary } from '../components/LiveDiary'
+import { PosterStrip } from '../components/PosterStrip'
+import { KIND_LABEL, useTrending } from '../lib/catalog'
 import { Wordmark } from '../components/Wordmark'
 import { useScrollEffects } from '../lib/motion'
 
@@ -28,72 +31,89 @@ const GROUPS = [
 
 const delay = (i: number) => ({ transitionDelay: `${i * 80}ms` })
 
-function PrimaryCta({ className = '' }: { className?: string }) {
+function PrimaryCta({ className = '', onPaper = false }: { className?: string; onPaper?: boolean }) {
   const { token } = useAuth()
   return (
     <Link to={token ? '/catalogo' : '/register'}
-      className={`inline-flex h-14 items-center justify-center bg-accent px-8 font-semibold text-ink transition hover:brightness-105 active:translate-y-px ${className}`}>
+      className={`inline-flex h-14 items-center justify-center px-8 font-semibold transition active:scale-[0.97] ${onPaper ? 'bg-ink text-paper hover:bg-ash' : 'bg-accent text-ink hover:brightness-105'} ${className}`}>
       {token ? 'Abrir catálogo' : 'Criar conta'}
     </Link>
   )
 }
 
-/* Botões da primeira tela: sobre o papel, o principal é tinta cheia e o secundário é um passo de tom mais escuro */
+/* Botões da primeira tela, sobre o campo escuro: os dois com preenchimento forte */
 function HeroActions() {
   const { token } = useAuth()
-  const base = 'inline-flex h-14 items-center justify-center px-8 font-semibold transition active:translate-y-px'
-  if (token)
-    return <Link to="/catalogo" className={`${base} bg-ink text-paper hover:bg-ash`}>Abrir catálogo</Link>
+  const base = 'inline-flex h-11 items-center justify-center px-4 text-[15px] font-semibold transition active:scale-[0.97] md:h-12 md:px-6'
+  if (token) return <Link to="/catalogo" className={`${base} bg-accent text-ink hover:brightness-105`}>Abrir catálogo</Link>
   return (
-    <div className="flex flex-col gap-3 sm:flex-row">
-      <Link to="/register" className={`${base} bg-ink text-paper hover:bg-ash`}>Criar conta</Link>
-      <Link to="/login" className={`${base} bg-paper-3 text-ink hover:bg-ink hover:text-paper`}>Entrar</Link>
-    </div>
+    <>
+      <Link to="/login" className={`${base} bg-paper text-ink hover:bg-paper-3`}>Entrar</Link>
+      <Link to="/register" className={`${base} bg-accent text-ink hover:brightness-105`}>Criar conta</Link>
+    </>
   )
 }
 
 export default function LandingPage() {
   const [hint, setHint] = useState<string>(GROUPS[0].items[0][1])
+  const items = useTrending()
+  const [activeId, setActiveId] = useState(items[0].id)
+  const paused = useRef(false)
   useScrollEffects()
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const t = setInterval(() => {
+      if (paused.current) return
+      setActiveId((id) => items[(items.findIndex((i) => i.id === id) + 1) % items.length].id)
+    }, 5000)
+    return () => clearInterval(t)
+  }, [items])
+  const featured = items.find((i) => i.id === activeId) ?? items[0]
 
   return (
     <>
       <main className="relative z-10">
-        {/* Hero: o nome é o monumento */}
-        <section data-field="paper" className="flex min-h-svh flex-col justify-between bg-paper px-5 pb-5 pt-5 text-ink md:px-8 md:pb-6 md:pt-6">
-          <div className="grid gap-10 md:grid-cols-12 md:gap-x-6">
-            <nav className="flex justify-end gap-6 text-[15px] md:col-span-4 md:col-start-9 md:row-start-1">
-              <a href="#recursos" className="hover:underline">Recursos</a>
-              <a href="#como-funciona" className="hover:underline">Como funciona</a>
+        {/* Hero: a fita de pôsteres. Troque PLACEHOLDER_ITEMS por dados do TMDB em lib/catalog.ts */}
+        <section data-field="ink" className="relative flex min-h-svh flex-col overflow-hidden bg-bg py-5 text-white md:py-6">
+          {featured.backdropUrl && (
+            <>
+              <img key={featured.id} src={featured.backdropUrl} alt="" className="fade-in absolute inset-0 h-full w-full object-cover" />
+              <div className="absolute inset-0 bg-bg/75" />
+            </>
+          )}
+          <header className="relative flex items-center justify-between px-5 md:px-8">
+            <Link to="/"><Brand /></Link>
+            <nav className="flex items-center gap-2 md:gap-3">
+              <a href="#recursos" className="mr-3 hidden text-[15px] hover:underline md:inline">Recursos</a>
+              <a href="#como-funciona" className="mr-4 hidden text-[15px] hover:underline md:inline">Como funciona</a>
+              <HeroActions />
             </nav>
-            <div data-reveal style={{ transitionDelay: '700ms' }} className="md:col-span-5 md:col-start-1 md:row-start-1">
-              <p className="max-w-[40ch] text-lg leading-snug md:text-xl">
-                CorsaBox é o diário de filmes, séries e animes.
+          </header>
+
+          <div className="relative grid gap-8 px-5 pt-12 md:grid-cols-12 md:gap-x-6 md:px-8 md:pt-[8svh]">
+            <div className="md:col-span-8">
+              <h1 className="mask display-n text-[9.5vw] md:text-[6.6vw]"><span>Tudo o que<br />você assistiu.</span></h1>
+              <p data-reveal style={{ transitionDelay: '500ms' }} className="mt-6 max-w-[44ch] text-lg md:text-xl">
+                CorsaBox é o diário de filmes, séries e animes. Registre o que você viu e guarde o que quer ver.
               </p>
-              <div className="mt-6"><HeroActions /></div>
+            </div>
+            <div key={featured.id} className="fade-in md:col-span-3 md:col-start-10 md:self-end">
+              <p className="wide text-2xl md:text-3xl">{featured.title}</p>
+              <p className="mt-1 text-[15px] text-muted">
+                Em alta agora · {KIND_LABEL[featured.kind]}{featured.year ? ` · ${featured.year}` : ''}
+              </p>
             </div>
           </div>
-          <div className="mt-10 flex flex-1 flex-col justify-end gap-5 md:gap-8">
-            <div className="grid gap-6 md:grid-cols-12 md:items-end md:gap-x-6">
-              <div className="mask w-fit md:col-span-5">
-                <span>
-                  <img src="/favicon.svg" alt="" className="block aspect-square h-[min(40vw,28svh)] w-auto md:h-[min(26vw,34svh)]" />
-                </span>
-              </div>
-              <div className="space-y-2 text-2xl font-semibold leading-tight md:col-span-6 md:col-start-7 md:space-y-3 md:text-[34px]">
-                <p data-reveal style={delay(5)}>Registre o que você assistiu.</p>
-                <p data-reveal style={delay(6)}>Guarde o que quer ver.</p>
-                <p data-reveal style={delay(7)}>Busque filmes, séries e animes.</p>
-              </div>
-            </div>
-            <h1 className="mask" aria-label="CorsaBox, o diário de filmes, séries e animes">
-              <span><Wordmark /></span>
-            </h1>
+
+          <div className="relative mt-10 h-[40svh] md:mt-auto md:h-[44svh]">
+            <PosterStrip items={items} activeId={activeId}
+              onActive={(id) => { paused.current = true; setActiveId(id) }}
+              onLeave={() => { paused.current = false }} />
           </div>
         </section>
 
         {/* Recursos: nomes em colunas, descrição no canto ao passar o mouse */}
-        <section id="recursos" data-field="ink" className="bg-bg text-white">
+        <section id="recursos" data-field="paper" className="bg-paper text-ink">
           <div className="mx-auto max-w-[1600px] px-5 py-[18vh] md:px-8 md:py-[20vh]">
             <div className="grid gap-12 md:grid-cols-12 md:gap-x-6">
               <h2 data-reveal className="text-[28px] font-semibold leading-tight md:col-span-12 md:mb-12">
@@ -103,15 +123,15 @@ export default function LandingPage() {
                 <div key={g.name} data-reveal style={delay(gi)}
                   className={`md:row-start-2 md:col-span-3 ${['md:col-start-1', 'md:col-start-4', 'md:col-start-7'][gi]}`}>
                   <p className="text-[1.0625rem] font-medium md:text-lg">{g.name}</p>
-                  <ul className="mt-6 space-y-1 text-lg leading-tight text-muted">
+                  <ul className="mt-6 space-y-1 text-lg leading-tight text-ash">
                     {g.items.map(([name, desc]) => (
                       <li key={name} tabIndex={0} onMouseEnter={() => setHint(desc)} onFocus={() => setHint(desc)}
-                        className="cursor-default transition-colors hover:text-white focus-visible:text-white">
+                        className="cursor-default transition-colors hover:text-ink focus-visible:text-ink">
                         {name}
                       </li>
                     ))}
                   </ul>
-                  <p className="mt-6 text-muted md:hidden">{g.summary}</p>
+                  <p className="mt-6 text-ash md:hidden">{g.summary}</p>
                 </div>
               ))}
               <p aria-live="polite" className="hidden text-lg md:col-span-3 md:col-start-10 md:row-start-2 md:block">{hint}</p>
@@ -120,7 +140,7 @@ export default function LandingPage() {
         </section>
 
         {/* Como funciona: coluna de leitura e o diário vivo do outro lado */}
-        <section id="como-funciona" data-field="paper" className="bg-paper text-ink">
+        <section id="como-funciona" data-field="ink" className="bg-bg text-white">
           <div className="mx-auto grid max-w-[1600px] gap-16 px-5 py-[18vh] md:grid-cols-12 md:gap-x-6 md:px-8 md:py-[20vh]">
             <div className="md:col-span-5 md:col-start-2">
               <h2 data-reveal className="text-[28px] font-semibold leading-tight md:text-[32px]">Do cadastro ao primeiro registro</h2>
@@ -137,12 +157,12 @@ export default function LandingPage() {
         </section>
 
         {/* Fechamento: a ideia de novo, invertida */}
-        <section data-field="ink" className="flex min-h-[80svh] flex-col justify-between bg-bg px-5 pb-10 pt-16 text-white md:min-h-[90svh] md:px-8">
+        <section data-field="paper" className="flex min-h-[80svh] flex-col justify-between bg-paper px-5 pb-10 pt-16 text-ink md:min-h-[90svh] md:px-8">
           <h2 data-reveal className="display-n text-[11.5vw] md:text-[9vw]">Seu diário<br />começa aqui.</h2>
           <div className="grid gap-8 md:grid-cols-12 md:items-end md:gap-x-6">
             <p data-reveal className="text-xl md:col-span-5">Crie sua conta e comece a registrar o que você assiste.</p>
             <div data-reveal style={delay(1)} className="md:col-span-3 md:col-start-10 md:justify-self-end">
-              <PrimaryCta className="w-full md:w-auto" />
+              <PrimaryCta onPaper className="w-full md:w-auto" />
             </div>
           </div>
         </section>

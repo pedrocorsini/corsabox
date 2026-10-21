@@ -31,6 +31,10 @@ body {
 ::selection { background: var(--color-accent); color: var(--color-ink); }
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
 
+.wide { font-variation-settings: "wdth" 125; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
+.fade-in { animation: fadein .5s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes fadein { from { opacity: 0; transform: translateY(8px); } }
+
 .display-n { font-variation-settings: "wdth" 100; font-weight: 800; letter-spacing: -0.04em; line-height: 0.9; text-transform: uppercase; }
 
 /* Entradas: cada parte de uma seção sobe e aparece, uma vez */
@@ -54,4 +58,5 @@ body {
   [data-reveal] { opacity: 1; transform: none; transition: none; }
   .mask > span { transform: none; animation: none; }
   .drift { animation: none; }
+  .fade-in { animation: none; }
 }
