@@ -40,7 +40,7 @@ export default function LoginPage() {
 
   return (
     <AuthLayout
-      title="Bem-vindo de volta"
+      title="Bem-vindo!"
       subtitle="Entre na sua conta para continuar."
       footer={
         <>
