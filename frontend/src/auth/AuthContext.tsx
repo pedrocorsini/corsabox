@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { api, type UpdateProfileData, type User } from '../lib/api'
+import { api, ApiError, type UpdateProfileData, type User } from '../lib/api'
 
 const TOKEN_KEY = 'corsabox.token'
 
@@ -25,7 +25,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!token) return
-    api.me(token).then(setUser).catch(logout)
+    let cancelled = false
+    let timer: ReturnType<typeof setTimeout> | undefined
+
+    const load = (attempt: number) => {
+      api
+        .me(token)
+        .then((u) => {
+          if (!cancelled) setUser(u)
+        })
+        .catch((e) => {
+          if (cancelled) return
+          // Só um 401 prova que o token acabou. Deploy, cold start e rede fora
+          // não são motivo para derrubar a sessão: espera e tenta de novo.
+          if (e instanceof ApiError && e.status === 401) {
+            logout()
+            return
+          }
+          timer = setTimeout(() => load(attempt + 1), Math.min(1000 * 2 ** attempt, 10_000))
+        })
+    }
+    load(0)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
   }, [token, logout])
 
   const login = async (email: string, password: string) => {

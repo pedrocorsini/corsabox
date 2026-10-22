@@ -9,8 +9,10 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 import com.corsini.corsabox.identity.domain.exception.EmailAlreadyInUseException;
 import com.corsini.corsabox.identity.domain.exception.InvalidCredentialsException;
+import com.corsini.corsabox.identity.domain.exception.InvalidResetTokenException;
 import com.corsini.corsabox.identity.domain.exception.UserNotFoundException;
 import com.corsini.corsabox.identity.domain.exception.UsernameAlreadyInUseException;
+import com.corsini.corsabox.identity.domain.exception.WrongCurrentPasswordException;
 
 @RestControllerAdvice
 public class UserExceptionHandler extends ResponseEntityExceptionHandler {
@@ -28,6 +30,13 @@ public class UserExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     ProblemDetail handleInvalid(IllegalArgumentException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    // Token de reset vencido, já usado ou substituído, e senha atual errada na troca de senha.
+    // 400 de propósito: 401 fica reservado para sessão expirada.
+    @ExceptionHandler({InvalidResetTokenException.class, WrongCurrentPasswordException.class})
+    ProblemDetail handleBadRequest(RuntimeException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 

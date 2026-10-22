@@ -17,6 +17,10 @@ export type RegisterData = {
 
 export type UpdateProfileData = Partial<Pick<User, 'firstName' | 'lastName' | 'username'>>
 
+export type ResetPasswordData = { token: string; newPassword: string }
+export type ChangePasswordData = { currentPassword: string; newPassword: string }
+
+/** status 0 significa que a requisição nem chegou ao servidor (rede fora, deploy em andamento). */
 export class ApiError extends Error {
   status: number
   constructor(status: number, message: string) {
@@ -26,18 +30,25 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init: RequestInit = {}, token?: string | null): Promise<T> {
-  const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  })
+  let res: Response
+  try {
+    res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}${path}`, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+  } catch {
+    throw new ApiError(0, 'Sem conexão com o servidor. Tente novamente.')
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => null)
     throw new ApiError(res.status, body?.detail ?? 'Algo deu errado. Tente novamente.')
   }
-  return res.json()
+  // 202 e 204 chegam sem corpo
+  const text = await res.text()
+  return (text ? JSON.parse(text) : undefined) as T
 }
 
 export const api = {
@@ -48,4 +59,12 @@ export const api = {
   me: (token: string) => request<User>('/api/users/me', {}, token),
   updateMe: (token: string, data: UpdateProfileData) =>
     request<User>('/api/users/me', { method: 'PATCH', body: JSON.stringify(data) }, token),
+
+  // Recuperação de senha. Os caminhos abaixo são o contrato que o backend precisa expor.
+  forgotPassword: (email: string) =>
+    request<void>('/api/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+  resetPassword: (data: ResetPasswordData) =>
+    request<void>('/api/auth/reset-password', { method: 'POST', body: JSON.stringify(data) }),
+  changePassword: (token: string, data: ChangePasswordData) =>
+    request<void>('/api/users/me/password', { method: 'PUT', body: JSON.stringify(data) }, token),
 }

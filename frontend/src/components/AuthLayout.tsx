@@ -17,7 +17,7 @@ export function AuthLayout({ title, subtitle, footer, children }: Props) {
       </aside>
 
       <main className="flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm">
+        <div className="fade-in w-full max-w-sm">
           <Link to="/" className="mb-8 inline-block lg:hidden"><Brand /></Link>
           <h1 className="text-2xl font-semibold">{title}</h1>
           <p className="mt-1.5 text-muted">{subtitle}</p>

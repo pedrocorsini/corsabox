@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useAuth } from '../auth/AuthContext'
 import { AppHeader } from '../components/AppHeader'
+import { ChangePasswordForm } from '../components/ChangePasswordForm'
 import { ErrorBanner, Field, SubmitButton, SuccessBanner } from '../components/ui'
 import { ApiError, type UpdateProfileData, type User } from '../lib/api'
 import { useScrollEffects } from '../lib/motion'
@@ -47,7 +48,7 @@ export default function ProfilePage() {
       <main className="mx-auto max-w-6xl px-5 pb-24 pt-12 md:px-8">
         <h1 data-reveal className="text-4xl font-semibold md:text-5xl">Perfil</h1>
         <p data-reveal style={{ transitionDelay: '80ms' }} className="mt-3 max-w-[52ch] text-lg text-muted">
-          Atualize seu nome e seu username. As mudanças valem na hora, em todo o app.
+          Atualize seu nome, seu username e sua senha. As mudanças valem na hora, em todo o app.
         </p>
 
         <div className="mt-12 grid gap-12 md:grid-cols-12 md:gap-x-6">
@@ -71,10 +72,18 @@ export default function ProfilePage() {
             </div>
           </aside>
 
-          <section className="md:col-span-7 md:col-start-6">
-            <h2 className="text-xl font-semibold">Dados pessoais</h2>
-            <ProfileForm user={user} />
-          </section>
+          <div className="space-y-16 md:col-span-7 md:col-start-6">
+            <section data-reveal>
+              <h2 className="text-xl font-semibold">Dados pessoais</h2>
+              <ProfileForm user={user} />
+            </section>
+
+            <section data-reveal>
+              <h2 className="text-xl font-semibold">Senha</h2>
+              <p className="mt-2 text-muted">Use uma senha que você não usa em outros sites.</p>
+              <ChangePasswordForm />
+            </section>
+          </div>
         </div>
       </main>
     </div>
@@ -166,4 +175,4 @@ function ProfileForm({ user }: { user: User }) {
       </div>
     </form>
   )
-}
+} 
