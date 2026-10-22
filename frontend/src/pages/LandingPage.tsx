@@ -94,7 +94,7 @@ export default function LandingPage() {
             <div className="md:col-span-8">
               <h1 className="mask display-n text-[9.5vw] md:text-[6.6vw]"><span>Tudo o que<br />você assistiu.</span></h1>
               <p data-reveal style={{ transitionDelay: '500ms' }} className="mt-6 max-w-[44ch] text-lg md:text-xl">
-                CorsaBox é o diário de filmes, séries e animes. Registre o que você viu e guarde o que quer ver.
+                CorsaBox é o seu diário de filmes, séries e animes. Registre o que você viu e guarde o que quer ver.
               </p>
             </div>
             <div key={featured.id} className="fade-in md:col-span-3 md:col-start-10 md:self-end">

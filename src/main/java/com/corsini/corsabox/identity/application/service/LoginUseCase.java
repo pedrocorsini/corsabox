@@ -20,6 +20,7 @@ public class LoginUseCase {
         this.tokenIssuer = tokenIssuer;
     }
 
+    // Login
     @Transactional(readOnly = true)
     public String execute(String email, String password) {
         var user = userRepository.findByEmail(email.strip().toLowerCase())

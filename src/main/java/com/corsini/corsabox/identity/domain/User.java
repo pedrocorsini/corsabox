@@ -16,8 +16,9 @@ public class User {
     private String lastName;
     private String username;
     private final Instant createdAt;
-    private final String passwordHash; // pode ser null
+    private final String passwordHash;
 
+    // Private constructor 
     private User(UserId id, String email, String username, String firstName, String lastName, String passwordHash, Instant createdAt) {
         this.id = id;
         this.email = email;
@@ -28,6 +29,7 @@ public class User {
         this.createdAt = createdAt;
     }
 
+    // Register 
     public static User register(String email, String username, String firstName, String lastName, String passwordHash) {
         return new User(
             new UserId(), 

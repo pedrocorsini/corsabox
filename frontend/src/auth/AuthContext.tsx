@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { api, type User } from '../lib/api'
+import { api, type UpdateProfileData, type User } from '../lib/api'
 
 const TOKEN_KEY = 'corsabox.token'
 
@@ -8,6 +8,7 @@ type AuthState = {
   user: User | null
   login: (email: string, password: string) => Promise<void>
   logout: () => void
+  updateProfile: (data: UpdateProfileData) => Promise<User>
 }
 
 const AuthContext = createContext<AuthState | null>(null)
@@ -33,7 +34,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(accessToken)
   }
 
-  return <AuthContext.Provider value={{ token, user, login, logout }}>{children}</AuthContext.Provider>
+  // O usuário devolvido pelo backend vira o estado global, então o header e o perfil se atualizam juntos.
+  const updateProfile = async (data: UpdateProfileData) => {
+    if (!token) throw new Error('Sem sessão ativa')
+    const updated = await api.updateMe(token, data)
+    setUser(updated)
+    return updated
+  }
+
+  return (
+    <AuthContext.Provider value={{ token, user, login, logout, updateProfile }}>{children}</AuthContext.Provider>
+  )
 }
 
 export function useAuth() {

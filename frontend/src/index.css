@@ -34,6 +34,11 @@ body {
 .wide { font-variation-settings: "wdth" 125; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
 .fade-in { animation: fadein .5s cubic-bezier(.2,.7,.2,1) both; }
 @keyframes fadein { from { opacity: 0; transform: translateY(8px); } }
+:root { --ease-out: cubic-bezier(0.23, 1, 0.32, 1); }
+
+.notice-in { animation: notice-in .2s var(--ease-out) both; }
+@keyframes notice-in { from { opacity: 0; transform: translateY(4px); } }
+@keyframes notice-fade { from { opacity: 0; } }
 
 .display-n { font-variation-settings: "wdth" 100; font-weight: 800; letter-spacing: -0.04em; line-height: 0.9; text-transform: uppercase; }
 
@@ -59,4 +64,6 @@ body {
   .mask > span { transform: none; animation: none; }
   .drift { animation: none; }
   .fade-in { animation: none; }
+  .notice-in { animation-name: notice-fade; }
 }
+
