@@ -56,7 +56,16 @@ export default function LoginPage() {
           error={errors.email?.message} {...register('email')} />
         <Field id="password" label="Senha" type="password" autoComplete="current-password"
           error={errors.password?.message} {...register('password')} />
-        {serverError && <ErrorBanner>{serverError}</ErrorBanner>}
+        <div className="text-right">
+          <Link to="/esqueci-senha" className="text-sm text-muted transition-colors hover:text-white">
+            Esqueci minha senha
+          </Link>
+        </div>
+        {serverError && (
+          <div key={serverError} className="notice-in">
+            <ErrorBanner>{serverError}</ErrorBanner>
+          </div>
+        )}
         <SubmitButton loading={isSubmitting}>Entrar</SubmitButton>
       </form>
     </AuthLayout>
