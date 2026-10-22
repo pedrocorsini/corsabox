@@ -16,7 +16,7 @@ public class User {
     private String lastName;
     private String username;
     private final Instant createdAt;
-    private final String passwordHash;
+    private String passwordHash;
 
     // Private constructor 
     private User(UserId id, String email, String username, String firstName, String lastName, String passwordHash, Instant createdAt) {
@@ -65,7 +65,13 @@ public class User {
         if (!USERNAME.matcher(username).matches())
             throw new IllegalArgumentException("Invalid username");
     return username;
-}
+    }
+
+    public void changePassword(String newPasswordHash) {
+    if (newPasswordHash == null || newPasswordHash.isBlank())
+        throw new IllegalArgumentException("Password hash is mandatory!");
+    this.passwordHash = newPasswordHash;
+    }
 }
     
 
