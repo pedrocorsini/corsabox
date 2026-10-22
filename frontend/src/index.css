@@ -1,16 +1,69 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #14181c;
-  --color-surface: #1f252b;
-  --color-line: #2c343c;
-  --color-accent: #00e054;
-  --color-muted: #99aabb;
+  --font-sans: "TikTok Sans", system-ui, sans-serif;
+  --color-bg: #181715;
+  --color-surface: #24231f;
+  --color-line: #34322d;
+  --color-muted: #a9a8a0;
+  --color-accent: #bfb21a;
+  --color-paper: #e8e8e3;
+  --color-paper-2: #dcdcd6;
+  --color-paper-3: #c8c8c0;
+  --color-ink: #181715;
+  --color-ash: #63625c;
 }
+
+/* Scroll: a barra acompanha o campo de cor que está na tela (definido em lib/motion.ts) */
+:root { --sb-thumb: #181715; --sb-track: #e8e8e3; }
+:root[data-field="ink"] { --sb-thumb: #bfb21a; --sb-track: #181715; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; scrollbar-color: var(--sb-thumb) var(--sb-track); }
+::-webkit-scrollbar { width: 12px; }
+::-webkit-scrollbar-track { background: var(--sb-track); }
+::-webkit-scrollbar-thumb { background: var(--sb-thumb); }
 
 body {
   background-color: var(--color-bg);
-  color: white;
-  font-family: Inter, system-ui, sans-serif;
+  color: var(--color-paper);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
+::selection { background: var(--color-accent); color: var(--color-ink); }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+
+.wide { font-variation-settings: "wdth" 125; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
+.fade-in { animation: fadein .5s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes fadein { from { opacity: 0; transform: translateY(8px); } }
+:root { --ease-out: cubic-bezier(0.23, 1, 0.32, 1); }
+
+.notice-in { animation: notice-in .2s var(--ease-out) both; }
+@keyframes notice-in { from { opacity: 0; transform: translateY(4px); } }
+@keyframes notice-fade { from { opacity: 0; } }
+
+.display-n { font-variation-settings: "wdth" 100; font-weight: 800; letter-spacing: -0.04em; line-height: 0.9; text-transform: uppercase; }
+
+/* Entradas: cada parte de uma seção sobe e aparece, uma vez */
+[data-reveal] { opacity: 0; transform: translateY(24px);
+  transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1); }
+[data-reveal].in { opacity: 1; transform: none; }
+
+/* Movimento de abertura: o nome sobe de trás da própria linha de base */
+.mask { display: block; overflow: hidden; }
+.mask > span { display: block; transform: translateY(105%); animation: rise .9s cubic-bezier(.16,1,.3,1) .05s forwards; }
+@keyframes rise { to { transform: none; } }
+
+/* Imagem em movimento: o fragmento do diário desliza conforme a rolagem */
+@supports (animation-timeline: view()) {
+  .drift { animation: drift linear both; animation-timeline: view(); }
+  @keyframes drift { from { transform: translateY(48px); } to { transform: translateY(-48px); } }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  [data-reveal] { opacity: 1; transform: none; transition: none; }
+  .mask > span { transform: none; animation: none; }
+  .drift { animation: none; }
+  .fade-in { animation: none; }
+  .notice-in { animation-name: notice-fade; }
+}
+

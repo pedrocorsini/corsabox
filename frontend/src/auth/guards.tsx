@@ -7,7 +7,7 @@ export function RequireAuth() {
   if (!token) return <Navigate to="/login" replace />
   if (!user)
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-svh items-center justify-center">
         <Loader2 className="animate-spin text-accent" />
       </div>
     )
@@ -16,5 +16,5 @@ export function RequireAuth() {
 
 export function GuestOnly() {
   const { token } = useAuth()
-  return token ? <Navigate to="/" replace /> : <Outlet />
+  return token ? <Navigate to="/catalogo" replace /> : <Outlet />
 }

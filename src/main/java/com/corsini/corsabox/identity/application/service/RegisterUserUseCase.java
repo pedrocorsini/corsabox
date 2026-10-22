@@ -22,6 +22,7 @@ public class RegisterUserUseCase {
         this.passwordEncoder = passwordEncoder;
     }
     
+    // Register user
     @Transactional 
     public User execute(RegisterUserCommand command){
         var user = User.register(command.email(), command.username(), command.firstName(), command.lastName(), passwordEncoder.encode(command.password()));

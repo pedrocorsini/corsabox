@@ -28,7 +28,7 @@ export default function LoginPage() {
     setServerError(null)
     try {
       await login(data.email, data.password)
-      navigate('/')
+      navigate('/catalogo')
     } catch (e) {
       setServerError(
         e instanceof ApiError && e.status === 401

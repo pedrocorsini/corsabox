@@ -44,7 +44,7 @@ export default function RegisterPage() {
         password: data.password,
       })
       await login(data.email, data.password)
-      navigate('/')
+      navigate('/catalogo')
     } catch (e) {
       setServerError(
         e instanceof ApiError && e.status === 409
