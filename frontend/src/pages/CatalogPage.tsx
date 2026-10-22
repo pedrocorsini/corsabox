@@ -1,23 +1,16 @@
-import { Link } from 'react-router'
 import { useAuth } from '../auth/AuthContext'
-import { Brand } from '../components/Brand'
+import { AppHeader } from '../components/AppHeader'
 import type { CatalogItem } from '../lib/catalog'
 import { useScrollEffects } from '../lib/motion'
 
 export default function CatalogPage() {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   useScrollEffects()
   const items: CatalogItem[] = []
 
   return (
     <div className="min-h-svh bg-bg text-white">
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 md:px-8">
-        <Link to="/catalogo"><Brand /></Link>
-        <div className="flex items-center gap-5 text-[15px]">
-          <span className="hidden text-muted sm:inline">@{user?.username}</span>
-          <button onClick={logout} className="text-muted transition hover:text-white">Sair</button>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="mx-auto max-w-6xl px-5 pb-24 pt-12 md:px-8">
         <h1 data-reveal className="text-4xl font-semibold md:text-5xl">Catálogo</h1>

@@ -15,6 +15,8 @@ export type RegisterData = {
   password: string
 }
 
+export type UpdateProfileData = Partial<Pick<User, 'firstName' | 'lastName' | 'username'>>
+
 export class ApiError extends Error {
   status: number
   constructor(status: number, message: string) {
@@ -44,4 +46,6 @@ export const api = {
   register: (data: RegisterData) =>
     request<User>('/api/users', { method: 'POST', body: JSON.stringify(data) }),
   me: (token: string) => request<User>('/api/users/me', {}, token),
+  updateMe: (token: string, data: UpdateProfileData) =>
+    request<User>('/api/users/me', { method: 'PATCH', body: JSON.stringify(data) }, token),
 }

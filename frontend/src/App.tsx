@@ -4,6 +4,7 @@ import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import CatalogPage from './pages/CatalogPage'
+import ProfilePage from './pages/ProfilePage'
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
       </Route>
       <Route element={<RequireAuth />}>
         <Route path="/catalogo" element={<CatalogPage />} />
+        <Route path="/perfil" element={<ProfilePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
