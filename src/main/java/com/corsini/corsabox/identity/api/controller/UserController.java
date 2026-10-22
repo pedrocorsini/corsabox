@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,12 +17,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.corsini.corsabox.identity.api.request.RegisterUserRequest;
+import com.corsini.corsabox.identity.api.request.UpdateProfileRequest;
 import com.corsini.corsabox.identity.api.response.UserResponse;
 import com.corsini.corsabox.identity.api.response.UserSummaryResponse;
 import com.corsini.corsabox.identity.application.dto.RegisterUserCommand;
+import com.corsini.corsabox.identity.application.dto.UpdateProfileCommand;
 import com.corsini.corsabox.identity.application.service.GetCurrentUserUseCase;
 import com.corsini.corsabox.identity.application.service.ListUserUseCase;
 import com.corsini.corsabox.identity.application.service.RegisterUserUseCase;
+import com.corsini.corsabox.identity.application.service.UpdateProfileUseCase;
 
 import jakarta.validation.Valid;
 
@@ -32,12 +36,14 @@ public class UserController {
     private final RegisterUserUseCase registerUser;
     private final ListUserUseCase listUsers;
     private final GetCurrentUserUseCase getCurrentUser;
+    private final UpdateProfileUseCase updateProfile;
 
 
-    public UserController(RegisterUserUseCase registerUser, ListUserUseCase listUsers, GetCurrentUserUseCase getCurrentUser) {
+    public UserController(RegisterUserUseCase registerUser, ListUserUseCase listUsers, GetCurrentUserUseCase getCurrentUser, UpdateProfileUseCase updateProfile) {
         this.registerUser = registerUser;
         this.listUsers = listUsers;
         this.getCurrentUser = getCurrentUser;
+        this.updateProfile = updateProfile;
     }
 
     @PostMapping
@@ -64,5 +70,16 @@ public class UserController {
     @GetMapping("/me")
     public UserResponse me(@AuthenticationPrincipal Jwt jwt) {
         return UserResponse.from(getCurrentUser.execute(UUID.fromString(jwt.getSubject())));
+    }
+
+    @PatchMapping("/me")
+    public UserResponse updateMe(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody UpdateProfileRequest request) {
+        var command = new UpdateProfileCommand(
+            UUID.fromString(jwt.getSubject()),
+            request.firstName(),
+            request.lastName(),
+            request.username());
+            
+        return UserResponse.from(updateProfile.execute(command));
     }
 } 
