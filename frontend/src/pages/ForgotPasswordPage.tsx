@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { AuthLayout } from '../components/AuthLayout'
 import { ErrorBanner, Field, SubmitButton, SuccessBanner } from '../components/ui'
-import { api } from '../lib/api'
+import { api, ApiError } from '../lib/api'
 
 const schema = z.object({ email: z.string().email('Informe um email válido') })
 type Form = z.infer<typeof schema>
@@ -16,16 +16,22 @@ export default function ForgotPasswordPage() {
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<Form>({ resolver: zodResolver(schema) })
 
   const onSubmit = async (data: Form) => {
     setServerError(null)
+    const email = data.email.trim().toLowerCase()
     try {
-      await api.forgotPassword(data.email.trim().toLowerCase())
-      setSentTo(data.email.trim().toLowerCase())
-    } catch {
-      setServerError('Não foi possível enviar agora. Tente novamente.')
+      await api.forgotPassword(email)
+      setSentTo(email)
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 404) {
+        setError('email', { message: 'Não existe uma conta com este email.' }, { shouldFocus: true })
+      } else {
+        setServerError('Não foi possível enviar agora. Tente novamente.')
+      }
     }
   }
 
@@ -44,8 +50,7 @@ export default function ForgotPasswordPage() {
     >
       {sentTo ? (
         <div key="sent" className="notice-in space-y-5">
-          {/* Resposta neutra de propósito: a tela não revela se o email tem conta. */}
-          <SuccessBanner>Se existir uma conta para {sentTo}, o link já está a caminho.</SuccessBanner>
+          <SuccessBanner>Enviamos o link para {sentTo}.</SuccessBanner>
           <p className="text-sm text-muted">
             O link vale por 30 minutos e só pode ser usado uma vez. Se não chegar, olhe a caixa de spam.
           </p>
