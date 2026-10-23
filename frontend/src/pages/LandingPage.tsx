@@ -55,9 +55,10 @@ function HeroActions() {
 }
 
 export default function LandingPage() {
-  const [hint, setHint] = useState<string>(GROUPS[0].items[0][1])
+  const [hint, setHint] = useState<string>(GROUPS[0].items[0][1]) 
   const items = useTrending()
   const [activeId, setActiveId] = useState(items[0].id)
+  useEffect(() => { setActiveId(items[0].id) }, [items])
   const paused = useRef(false)
   useScrollEffects()
   useEffect(() => {
