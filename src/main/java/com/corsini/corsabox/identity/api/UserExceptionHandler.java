@@ -6,6 +6,8 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 
 import com.corsini.corsabox.identity.domain.exception.EmailAlreadyInUseException;
 import com.corsini.corsabox.identity.domain.exception.InvalidCredentialsException;
@@ -14,6 +16,7 @@ import com.corsini.corsabox.identity.domain.exception.UserNotFoundException;
 import com.corsini.corsabox.identity.domain.exception.UsernameAlreadyInUseException;
 import com.corsini.corsabox.identity.domain.exception.WrongCurrentPasswordException;
 
+@Order(Ordered.LOWEST_PRECEDENCE)
 @RestControllerAdvice
 public class UserExceptionHandler extends ResponseEntityExceptionHandler {
 

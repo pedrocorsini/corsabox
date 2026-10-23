@@ -17,6 +17,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriBuilder;
+import org.springframework.web.client.HttpClientErrorException;
+import com.corsini.corsabox.catalog.domain.MediaFormat;
+import com.corsini.corsabox.catalog.domain.exception.CatalogItemNotFoundException;
 
 import com.corsini.corsabox.catalog.application.port.CatalogProvider;
 import com.corsini.corsabox.catalog.domain.CatalogItem;
@@ -91,7 +94,8 @@ public class TmdbCatalogProvider implements CatalogProvider {
 
         var kind = isAnime(r) ? MediaKind.ANIME : movie ? MediaKind.MOVIE : MediaKind.TV;
         var date = movie ? r.releaseDate() : r.firstAirDate();
-        return Optional.of(new CatalogItem(r.id(), title, kind, year(date),
+        var format = movie ? MediaFormat.MOVIE : MediaFormat.TV;
+        return Optional.of(new CatalogItem(r.id(), title, kind, format, year(date),
                 image(r.posterPath(), "w500"), image(r.backdropPath(), "w1280")));
     }
 
@@ -116,6 +120,8 @@ public class TmdbCatalogProvider implements CatalogProvider {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     record TmdbPage(List<TmdbResult> results) {}
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record TmdbGenre(int id) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     record TmdbResult(
@@ -129,4 +135,39 @@ public class TmdbCatalogProvider implements CatalogProvider {
             @JsonProperty("backdrop_path") String backdropPath,
             @JsonProperty("original_language") String originalLanguage,
             @JsonProperty("genre_ids") List<Integer> genreIds) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record TmdbDetail(
+            int id,
+            String title,
+            String name,
+            @JsonProperty("release_date") String releaseDate,
+            @JsonProperty("first_air_date") String firstAirDate,
+            @JsonProperty("poster_path") String posterPath,
+            @JsonProperty("backdrop_path") String backdropPath,
+            @JsonProperty("original_language") String originalLanguage,
+            List<TmdbGenre> genres) {}
+
+    @Override
+    @Cacheable(cacheNames = "tmdb-details", key = "#format + ':' + #id")
+    public CatalogItem details(MediaFormat format, int id) {
+        try {
+            var d = http.get()
+                    .uri(u -> u.path("/{type}/{id}").queryParam("language", language).build(format.path(), id))
+                    .retrieve()
+                    .body(TmdbDetail.class);
+            if (d == null) throw new CatalogItemNotFoundException(format, id);
+            var genreIds = d.genres() == null
+                    ? List.<Integer>of()
+                    : d.genres().stream().map(TmdbGenre::id).toList();
+            var result = new TmdbResult(d.id(), format.path(), d.title(), d.name(), d.releaseDate(),
+                    d.firstAirDate(), d.posterPath(), d.backdropPath(), d.originalLanguage(), genreIds);
+            return toItem(result).orElseThrow(() -> new CatalogItemNotFoundException(format, id));
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new CatalogItemNotFoundException(format, id);
+        } catch (RestClientException e) {
+            log.error("Falha ao consultar a TMDB", e);
+            throw new CatalogUnavailableException(e);
+        }
+    }
 }
