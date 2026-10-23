@@ -55,8 +55,8 @@ export function PosterStrip({ items, activeId, onActive, onLeave }: Props) {
     <ul ref={ref} aria-label="Em alta agora" onPointerLeave={onLeave}
       className="flex h-full cursor-grab select-none gap-3 overflow-x-auto px-5 active:cursor-grabbing md:gap-4 md:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {items.map((it, i) => (
-        <li key={it.id} data-reveal style={{ transitionDelay: `${Math.min(i, 6) * 70}ms` }}
-          onPointerEnter={() => onActive(it.id)} className="aspect-[2/3] h-full shrink-0 p-1">
+        <li key={it.id} style={{ animationDelay: `${Math.min(i, 6) * 70}ms` }}
+            onPointerEnter={() => onActive(it.id)} className="fade-in aspect-[2/3] h-full shrink-0 p-1">  
           <div className={`h-full w-full overflow-hidden outline-3 outline-offset-2 transition-[transform,outline-color] duration-150 active:scale-[0.97] ${
             activeId === it.id ? 'outline-accent' : 'outline-transparent'} ${it.posterUrl ? 'bg-surface' : TONES[i % TONES.length]}`}>
             {it.posterUrl ? (

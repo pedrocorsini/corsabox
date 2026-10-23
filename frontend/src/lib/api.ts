@@ -1,3 +1,5 @@
+import type { CatalogItem } from './catalog'
+
 export type User = {
   id: string
   firstName: string
@@ -67,4 +69,9 @@ export const api = {
     request<void>('/api/auth/reset-password', { method: 'POST', body: JSON.stringify(data) }),
   changePassword: (token: string, data: ChangePasswordData) =>
     request<void>('/api/users/me/password', { method: 'PUT', body: JSON.stringify(data) }, token),
+  catalog: {
+    trending: () => request<CatalogItem[]>('/api/catalog/trending'),
+    search: (token: string, q: string, page = 1) =>
+      request<CatalogItem[]>(`/api/catalog/search?q=${encodeURIComponent(q)}&page=${page}`, {}, token),
+  },
 }
