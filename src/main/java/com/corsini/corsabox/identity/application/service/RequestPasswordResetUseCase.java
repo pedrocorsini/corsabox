@@ -12,6 +12,7 @@ import com.corsini.corsabox.identity.application.port.ResetTokenService;
 import com.corsini.corsabox.identity.domain.PasswordResetToken;
 import com.corsini.corsabox.identity.domain.PasswordResetTokenRepository;
 import com.corsini.corsabox.identity.domain.UserRepository;
+import com.corsini.corsabox.identity.domain.exception.EmailNotFoundException;
 
 @Service
     public class RequestPasswordResetUseCase {
@@ -32,18 +33,17 @@ import com.corsini.corsabox.identity.domain.UserRepository;
         this.tokenService = tokenService;
         this.ttl = Duration.ofMinutes(ttlMinutes);
     }
-
     @Transactional
     public void execute(String email) {
-        userRepository.findByEmail(email.strip().toLowerCase())
-                .filter(user -> user.getPasswordHash() != null)
-                .ifPresent(user -> {
-                    tokenRepository.invalidateAllFor(user.getId(), Instant.now());
+        var user = userRepository.findByEmail(email.strip().toLowerCase())
+                .filter(u -> u.getPasswordHash() != null)
+                .orElseThrow(EmailNotFoundException::new);
 
-                    var raw = tokenService.generate();
-                    tokenRepository.save(PasswordResetToken.issue(user.getId(), tokenService.hash(raw), ttl));
+        tokenRepository.invalidateAllFor(user.getId(), Instant.now());
 
-                    mailer.send(user, raw);
-                });
+        var raw = tokenService.generate();
+        tokenRepository.save(PasswordResetToken.issue(user.getId(), tokenService.hash(raw), ttl));
+
+        mailer.send(user, raw);
     }
 }   

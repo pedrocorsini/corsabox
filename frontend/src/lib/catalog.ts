@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { api } from './api' 
 
 export type CatalogItem = {
   id: number
@@ -25,15 +26,16 @@ export const PLACEHOLDER_ITEMS: CatalogItem[] = [
   { id: 10, title: 'Attack on Titan', kind: 'anime', year: 2013 },
 ]
 
-/**
- * TODO TMDB: trocar pelo endpoint real do backend, por exemplo GET /api/catalog/trending.
- * Ele deve devolver CatalogItem[] com posterUrl e backdropUrl já montados.
- * Quando existir, use `const [items, setItems]` e descomente a chamada abaixo.
- */
-export function useTrending(): CatalogItem[] {
-  const [items] = useState<CatalogItem[]>(PLACEHOLDER_ITEMS)
+export function useTrending(): { items: CatalogItem[]; loading: boolean } {
+  const [items, setItems] = useState<CatalogItem[]>([])
+  const [loading, setLoading] = useState(true)
   useEffect(() => {
-    // api.catalog.trending().then(setItems).catch(() => {})
+    let cancelled = false
+    api.catalog.trending()
+      .then((data) => { if (!cancelled) setItems(data.length > 0 ? data : PLACEHOLDER_ITEMS) })
+      .catch(() => { if (!cancelled) setItems(PLACEHOLDER_ITEMS) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [])
-  return items
+  return { items, loading }
 }
