@@ -5,7 +5,7 @@
 **Your diary of movies, series and anime.**
 Log what you've watched. Save what you want to watch.
 
-[![Live demo](https://img.shields.io/badge/live%20demo-open-bfb21a?style=for-the-badge&labelColor=181715)](https://www.corsabox.app/)
+[![Live demo](https://img.shields.io/badge/live%20demo-open-bfb21a?style=for-the-badge&labelColor=181715)](https://www.corsabox.app)
 
 ![Java](https://img.shields.io/badge/Java-25-ED8B00?logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1-6DB33F?logo=springboot&logoColor=white)
@@ -14,7 +14,7 @@ Log what you've watched. Save what you want to watch.
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
 ![Tailwind](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)
 
-[**Live app**](https://www.corsabox.app/) · [**API docs (Swagger)**](https://corsabox.onrender.com/swagger-ui.html) · [**Report a bug**](../../issues)
+[**Live app**](https://www.corsabox.app) · [**API docs (Swagger)**](https://corsabox.onrender.com/swagger-ui.html) · [**Report a bug**](../../issues)
 
 </div>
 
@@ -248,8 +248,8 @@ The production setup uses three free-tier services. Deploy them in this order: *
 
 | Layer | Service | Live URL |
 |---|---|---|
-| Frontend | Vercel | https://YOUR-APP.vercel.app |
-| API | Render | https://YOUR-API.onrender.com |
+| Frontend | Vercel | https://www.corsabox.app |
+| API | Render | https://corsabox.onrender.com |
 | Database | Supabase | private |
 
 ### 1. Database (Supabase)
@@ -269,7 +269,7 @@ Tables are created by Hibernate (`ddl-auto=update`) the first time the API boots
 The API is deployed as a Docker web service using the `Dockerfile` in the repository root (a multi-stage build: JDK 25 to compile, JRE 25 to run).
 
 1. On [Render](https://render.com), create a **New → Web Service** and connect the GitHub repository.
-2. Set the runtime to **Docker**. The file in the repository is named `DOCKERFILE`; since Linux is case-sensitive, either rename it to `Dockerfile` or set **Dockerfile Path** to `./DOCKERFILE`.
+2. Set the runtime to **Docker**. Render picks up the `Dockerfile` in the repository root automatically.
 3. Add the environment variables:
 
    | Variable | Value |
@@ -278,8 +278,8 @@ The API is deployed as a Docker web service using the `Dockerfile` in the reposi
    | `SPRING_DATASOURCE_USERNAME` | your Supabase user |
    | `SPRING_DATASOURCE_PASSWORD` | your Supabase password |
    | `JWT_SECRET` | a long random string (32+ bytes) |
-   | `APP_CORS_ALLOWED_ORIGINS` | `https://YOUR-APP.vercel.app` |
-   | `APP_FRONTEND_URL` | `https://YOUR-APP.vercel.app` |
+   | `APP_CORS_ALLOWED_ORIGINS` | `https://www.corsabox.app` |
+   | `APP_FRONTEND_URL` | `https://www.corsabox.app` |
    | `MAIL_API_KEY` | your Brevo API key |
    | `MAIL_SENDER_EMAIL` | your verified Brevo sender |
 
@@ -297,7 +297,7 @@ The `prod` profile turns off the Docker Compose integration, points the API at S
 
    | Variable | Value |
    |---|---|
-   | `VITE_API_URL` | `https://YOUR-API.onrender.com` |
+   | `VITE_API_URL` | `https://corsabox.onrender.com` |
 
 4. Deploy. `frontend/vercel.json` rewrites every path to `index.html`, so client-side routes such as `/perfil` and `/redefinir-senha` work on refresh and when opened from an email link.
 
