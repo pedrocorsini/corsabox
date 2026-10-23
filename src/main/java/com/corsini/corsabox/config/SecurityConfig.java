@@ -1,4 +1,4 @@
-package com.corsini.corsabox.identity.infrastructure.security;
+package com.corsini.corsabox.config;
 
 import java.util.List;
 
