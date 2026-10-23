@@ -26,14 +26,16 @@ export const PLACEHOLDER_ITEMS: CatalogItem[] = [
   { id: 10, title: 'Attack on Titan', kind: 'anime', year: 2013 },
 ]
 
-export function useTrending(): CatalogItem[] {
-  const [items, setItems] = useState<CatalogItem[]>(PLACEHOLDER_ITEMS)
+export function useTrending(): { items: CatalogItem[]; loading: boolean } {
+  const [items, setItems] = useState<CatalogItem[]>([])
+  const [loading, setLoading] = useState(true)
   useEffect(() => {
     let cancelled = false
     api.catalog.trending()
-      .then((data) => { if (!cancelled && data.length > 0) setItems(data) })
-      .catch(() => {})
+      .then((data) => { if (!cancelled) setItems(data.length > 0 ? data : PLACEHOLDER_ITEMS) })
+      .catch(() => { if (!cancelled) setItems(PLACEHOLDER_ITEMS) })
+      .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [])
-  return items
+  return { items, loading }
 }

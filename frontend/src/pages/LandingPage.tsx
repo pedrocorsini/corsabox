@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 import { useAuth } from '../auth/AuthContext'
 import { Brand } from '../components/Brand'
 import { LiveDiary } from '../components/LiveDiary'
-import { PosterStrip } from '../components/PosterStrip'
+import { PosterSkeleton, PosterStrip } from '../components/PosterStrip'
 import { KIND_LABEL, useTrending } from '../lib/catalog'
 import { Wordmark } from '../components/Wordmark'
 import { useScrollEffects } from '../lib/motion'
@@ -55,13 +55,14 @@ function HeroActions() {
 }
 
 export default function LandingPage() {
-  const [hint, setHint] = useState<string>(GROUPS[0].items[0][1]) 
-  const items = useTrending()
-  const [activeId, setActiveId] = useState(items[0].id)
-  useEffect(() => { setActiveId(items[0].id) }, [items])
+  const [hint, setHint] = useState<string>(GROUPS[0].items[0][1])
+  const { items, loading } = useTrending()
+  const [activeId, setActiveId] = useState<number | null>(null)
+  useEffect(() => { setActiveId(items[0]?.id ?? null) }, [items])
   const paused = useRef(false)
   useScrollEffects()
   useEffect(() => {
+    if (items.length === 0) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const t = setInterval(() => {
       if (paused.current) return
@@ -74,9 +75,9 @@ export default function LandingPage() {
   return (
     <>
       <main className="relative z-10">
-        {/* Hero: a fita de pôsteres. Troque PLACEHOLDER_ITEMS por dados do TMDB em lib/catalog.ts */}
+        {/* Hero: a fita de pôsteres com os títulos em alta da TMDB */}
         <section data-field="ink" className="relative flex min-h-svh flex-col overflow-hidden bg-bg py-5 text-white md:py-6">
-          {featured.backdropUrl && (
+          {featured?.backdropUrl && (
             <>
               <img key={featured.id} src={featured.backdropUrl} alt="" className="fade-in absolute inset-0 h-full w-full object-cover" />
               <div className="absolute inset-0 bg-bg/75" />
@@ -98,18 +99,24 @@ export default function LandingPage() {
                 CorsaBox é o seu diário de filmes, séries e animes. Registre o que você viu e guarde o que quer ver.
               </p>
             </div>
-            <div key={featured.id} className="fade-in md:col-span-3 md:col-start-10 md:self-end">
-              <p className="wide text-2xl md:text-3xl">{featured.title}</p>
-              <p className="mt-1 text-[15px] text-muted">
-                Em alta agora · {KIND_LABEL[featured.kind]}{featured.year ? ` · ${featured.year}` : ''}
-              </p>
-            </div>
+            {featured && (
+              <div key={featured.id} className="fade-in md:col-span-3 md:col-start-10 md:self-end">
+                <p className="wide text-2xl md:text-3xl">{featured.title}</p>
+                <p className="mt-1 text-[15px] text-muted">
+                  Em alta agora · {KIND_LABEL[featured.kind]}{featured.year ? ` · ${featured.year}` : ''}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="relative mt-10 h-[40svh] md:mt-auto md:h-[44svh]">
-            <PosterStrip items={items} activeId={activeId}
-              onActive={(id) => { paused.current = true; setActiveId(id) }}
-              onLeave={() => { paused.current = false }} />
+            {loading ? (
+              <PosterSkeleton />
+            ) : (
+              <PosterStrip items={items} activeId={activeId ?? -1}
+                onActive={(id) => { paused.current = true; setActiveId(id) }}
+                onLeave={() => { paused.current = false }} />
+            )}
           </div>
         </section>
 

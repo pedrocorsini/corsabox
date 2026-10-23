@@ -73,3 +73,15 @@ export function PosterStrip({ items, activeId, onActive, onLeave }: Props) {
     </ul>
   )
 }
+
+export function PosterSkeleton() {
+  return (
+    <ul aria-hidden="true" className="flex h-full gap-3 overflow-hidden px-5 md:gap-4 md:px-8">
+      {Array.from({ length: 8 }, (_, i) => (
+        <li key={i} className="aspect-[2/3] h-full shrink-0 p-1">
+          <div className="h-full w-full animate-pulse bg-surface" />
+        </li>
+      ))}
+    </ul>
+  )
+}

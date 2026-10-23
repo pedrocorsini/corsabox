@@ -8,10 +8,10 @@ const link = ({ isActive }: { isActive: boolean }) =>
 export function AppHeader() {
   const { user, logout } = useAuth()
   return (
-    <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 md:px-8">
-      <Link to="/"><Brand /></Link>
-      <nav className="flex items-center gap-5 text-[15px]">
-        <NavLink to="/catalogo" className={(s) => `hidden sm:inline ${link(s)}`}>Catálogo</NavLink>
+    <header className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-5 md:px-8">
+      <Link to="/" className="shrink-0"><Brand /></Link>
+      <nav className="flex items-center gap-4 text-[15px] sm:gap-5">
+        <NavLink to="/catalogo" className={link}>Catálogo</NavLink>
         <NavLink to="/perfil" className={link}>
           <span className="hidden sm:inline">@{user?.username}</span>
           <span className="sm:hidden">Perfil</span>
@@ -20,4 +20,4 @@ export function AppHeader() {
       </nav>
     </header>
   )
-}
+} 
