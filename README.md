@@ -104,7 +104,7 @@ The domain layer has no dependency on Spring Data. The application layer talks t
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/YOUR-USER/corsabox.git
+git clone https://github.com/pedrocorsini/corsabox.git
 cd corsabox
 ```
 
