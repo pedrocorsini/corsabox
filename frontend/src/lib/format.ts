@@ -16,3 +16,10 @@ export function todayISO() {
 }
 
 export const ratingText = (v: number) => v.toFixed(1).replace('.', ',')
+
+export function formatRuntime(min: number, perEpisode = false) {
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  const text = h > 0 ? (m > 0 ? `${h}h ${m}min` : `${h}h`) : `${m}min`
+  return perEpisode ? `${text} por episódio` : text
+}

@@ -1,4 +1,4 @@
-import type { CatalogItem, MediaFormat } from './catalog'
+import type { CatalogItem, MediaDetails, MediaFormat } from './catalog'
 
 export type BrowseCategory = 'movies' | 'tv' | 'anime'
 export type BrowseSort = 'popularity' | 'title'
@@ -33,7 +33,20 @@ export type RegisterData = {
 }
 
 export type WatchedData = { rating: number | null; watchedOn: string | null; review: string | null }
-export type Page<T> = { content: T[]; last: boolean; number: number; totalElements: number }
+export type Page<T> = {
+  content: T[]
+  last?: boolean
+  totalElements?: number
+  page?: { number: number; totalPages: number; totalElements: number }
+}
+
+export function pageInfo<T>(p: Page<T>) {
+  const more = p.last === false || (p.page ? p.page.number + 1 < p.page.totalPages : false)
+  return {
+    total: p.totalElements ?? p.page?.totalElements ?? p.content.length,
+    hasMore: p.content.length > 0 && more,
+  }
+}
 
 export type UpdateProfileData = Partial<Pick<User, 'firstName' | 'lastName' | 'username'>>
 
@@ -92,7 +105,7 @@ export const api = {
     search: (token: string, q: string, page = 1) =>
       request<CatalogItem[]>(`/api/catalog/search?q=${encodeURIComponent(q)}&page=${page}`, {}, token),
     details: (token: string, format: MediaFormat, id: number) =>
-      request<CatalogItem>(`/api/catalog/${format}/${id}`, {}, token),
+      request<MediaDetails>(`/api/catalog/${format}/${id}`, {}, token),
     browse: (token: string, category: BrowseCategory, sort: BrowseSort, page = 1) =>
       request<CatalogItem[]>(`/api/catalog/browse?category=${category}&sort=${sort}&page=${page}`, {}, token),
   },

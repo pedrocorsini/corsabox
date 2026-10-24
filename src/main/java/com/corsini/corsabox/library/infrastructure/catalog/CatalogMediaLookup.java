@@ -17,7 +17,7 @@ public class CatalogMediaLookup implements MediaLookup {
 
     @Override
     public MediaSnapshot find(MediaFormat format, int tmdbId) {
-        var i = getDetails.execute(format, tmdbId);
+        var i = getDetails.execute(format, tmdbId).item();
         return new MediaSnapshot(i.id(), i.format(), i.kind(), i.title(), i.year(),
                 i.posterUrl(), i.backdropUrl());
     }

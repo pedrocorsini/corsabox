@@ -68,7 +68,6 @@ public class UserJpaRepository implements UserRepository {
         return springDataUserRepository.existsByUsername(username.strip().toLowerCase());
     }
 
-    @SuppressWarnings("null")
     @Override
     public Page<User> findAll(Pageable pageable) {
         var sorted = PageRequest.of(
