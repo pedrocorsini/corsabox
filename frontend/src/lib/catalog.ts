@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { api } from './api'
+import { formatDay, formatRuntime } from './format'
 
 export type MediaFormat = 'movie' | 'tv'
+export type TrendingWindow = 'day' | 'week'
 
 export type CatalogItem = {
   id: number
@@ -14,10 +16,35 @@ export type CatalogItem = {
   backdropUrl?: string
 }
 
+export type MediaDetails = CatalogItem & {
+  releaseDate?: string      // 'YYYY-MM-DD'
+  runtimeMinutes?: number
+  genres?: string[]
+  directors?: string[]
+  writers?: string[]
+  creators?: string[]
+  cast?: string[]
+}
+
+export const PERIODS = [
+  { id: 'day', param: 'hoje', label: 'Hoje' },
+  { id: 'week', param: 'semana', label: 'Nesta semana' },
+] as const
+
 export const titlePath = (i: Pick<CatalogItem, 'format' | 'id'>) => `/titulo/${i.format}/${i.id}`
+
 export const itemKey = (i: Pick<CatalogItem, 'format' | 'id'>) => `${i.format}-${i.id}`
 
 export const KIND_LABEL = { movie: 'Filme', tv: 'Série', anime: 'Anime' } as const
+
+export function metaLine(item: MediaDetails) {
+  return [
+    KIND_LABEL[item.kind],
+    item.releaseDate ? formatDay(item.releaseDate) : item.year ?? null,
+    item.runtimeMinutes ? formatRuntime(item.runtimeMinutes, item.format === 'tv') : null,
+    item.genres?.join(', '),
+  ].filter(Boolean).join(' · ')
+}
 
 // Exemplos para quando a API não responde. Sem posterUrl, o cartão vira um cartão de título desenhado.
 export const PLACEHOLDER_ITEMS: CatalogItem[] = [
@@ -33,26 +60,20 @@ export const PLACEHOLDER_ITEMS: CatalogItem[] = [
   { id: 10, title: 'Attack on Titan', kind: 'anime', format: 'tv', year: 2013 },
 ]
 
-export function useTrending(): { items: CatalogItem[]; loading: boolean } {
-  const [items, setItems] = useState<CatalogItem[]>([])
-  const [loading, setLoading] = useState(true)
+// `loading` vale só na primeira carga. Ao trocar o período, a lista antiga fica até a nova chegar (`pending`).
+export function useTrending(period: TrendingWindow) {
+  const [result, setResult] = useState<{ period: TrendingWindow; items: CatalogItem[] } | null>(null)
   useEffect(() => {
     let cancelled = false
-    api.catalog.trending()
-      .then((data) => { if (!cancelled) setItems(data.length > 0 ? data : PLACEHOLDER_ITEMS) })
-      .catch(() => { if (!cancelled) setItems(PLACEHOLDER_ITEMS) })
-      .finally(() => { if (!cancelled) setLoading(false) })
+    api.catalog.trending(period)
+      .then((data) => (data.length > 0 ? data : PLACEHOLDER_ITEMS))
+      .catch(() => PLACEHOLDER_ITEMS)
+      .then((items) => { if (!cancelled) setResult({ period, items }) })
     return () => { cancelled = true }
-  }, [])
-  return { items, loading }
-}
-
-export type MediaDetails = CatalogItem & {
-  releaseDate?: string      
-  runtimeMinutes?: number
-  genres?: string[]
-  directors?: string[]
-  writers?: string[]
-  creators?: string[]
-  cast?: string[]
+  }, [period])
+  return {
+    items: result?.items ?? [],
+    loading: result === null,
+    pending: result !== null && result.period !== period,
+  }
 }

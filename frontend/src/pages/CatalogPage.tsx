@@ -6,8 +6,9 @@ import { AppHeader } from '../components/AppHeader'
 import { Poster } from '../components/Poster'
 import { Button, ErrorBanner } from '../components/ui'
 import { api, type BrowseCategory, type BrowseSort } from '../lib/api'
-import { KIND_LABEL, itemKey, titlePath, type CatalogItem } from '../lib/catalog'
+import { KIND_LABEL, PERIODS, itemKey, titlePath, type CatalogItem, type TrendingWindow } from '../lib/catalog'
 import { useScrollEffects } from '../lib/motion'
+import { useInfiniteScroll } from '../lib/useInfiniteScroll'
 
 type Tab = 'trending' | BrowseCategory
 type Result = { key: string; items: CatalogItem[]; page: number; more: boolean; error: boolean }
@@ -19,20 +20,45 @@ const TABS: { id: Tab; param: string; label: string }[] = [
   { id: 'anime', param: 'animes', label: 'Animes' },
 ]
 
-const SORTS: { id: BrowseSort; param: string; label: string }[] = [
-  { id: 'popularity', param: 'popularidade', label: 'Popularidade' },
-  { id: 'title', param: 'alfabetica', label: 'A a Z' },
-]
+const SORTS = [
+  { id: 'popularity', label: 'Popularidade' },
+  { id: 'title', label: 'A a Z' },
+] as const
+
+const TRENDING_SORTS = [
+  { id: 'popularity', label: 'Em alta' },
+  { id: 'title', label: 'A a Z' },
+] as const
 
 const merge = (a: CatalogItem[], b: CatalogItem[]) => {
   const seen = new Set(a.map(itemKey))
   return [...a, ...b.filter((i) => !seen.has(itemKey(i)))]
 }
 
-function fetchPage(token: string, tab: Tab, sort: BrowseSort, query: string, page: number) {
+function fetchPage(token: string, tab: Tab, sort: BrowseSort, period: TrendingWindow, query: string, page: number) {
   if (query) return api.catalog.search(token, query, page)
-  if (tab === 'trending') return api.catalog.trending()
+  if (tab === 'trending') return api.catalog.trending(period)
   return api.catalog.browse(token, tab, sort, page)
+}
+
+function Segmented<T extends string>({ label, options, value, onChange }: {
+  label: string
+  options: readonly { id: T; label: string }[]
+  value: T
+  onChange: (id: T) => void
+}) {
+  return (
+    <div role="group" aria-label={label} className="flex flex-wrap items-center gap-2">
+      <span className="mr-1 text-[15px] text-muted">{label}</span>
+      {options.map((o) => (
+        <button key={o.id} aria-pressed={o.id === value} onClick={() => onChange(o.id)}
+          className={`h-9 px-3 text-[15px] font-medium transition active:scale-[0.97] ${
+            o.id === value ? 'bg-paper text-ink' : 'bg-surface text-muted hover:text-white'}`}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
 }
 
 export default function CatalogPage() {
@@ -42,8 +68,10 @@ export default function CatalogPage() {
   const q = params.get('q') ?? ''
   const query = q.length >= 2 ? q : ''
   const tab = TABS.find((t) => t.param === params.get('aba'))?.id ?? 'trending'
-  const sort = SORTS.find((s) => s.param === params.get('ordem'))?.id ?? 'popularity'
-  const key = query ? `q:${query}` : tab === 'trending' ? 'trending' : `${tab}:${sort}`
+  const sort: BrowseSort = params.get('ordem') === 'alfabetica' ? 'title' : 'popularity'
+  const period: TrendingWindow = params.get('periodo') === 'semana' ? 'week' : 'day'
+  const apiSort: BrowseSort = tab === 'trending' ? 'popularity' : sort
+  const key = query ? `q:${query}` : tab === 'trending' ? `trending:${period}` : `${tab}:${apiSort}`
   const paginated = query !== '' || tab !== 'trending'
 
   const [text, setText] = useState(q)
@@ -52,7 +80,6 @@ export default function CatalogPage() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const input = useRef<HTMLInputElement>(null)
-  const sentinel = useRef<HTMLDivElement>(null)
   const busy = useRef(false)
 
   const setParam = (name: string, value: string | null) =>
@@ -63,7 +90,7 @@ export default function CatalogPage() {
       return next
     }, { replace: true })
 
-  // A busca vai para a URL com debounce, sem apagar a aba e a ordem.
+  // A busca vai para a URL com debounce, sem apagar a aba, o período e a ordem.
   useEffect(() => {
     const t = setTimeout(() => {
       const v = text.trim()
@@ -76,7 +103,7 @@ export default function CatalogPage() {
   useEffect(() => {
     if (!token) return
     let cancelled = false
-    fetchPage(token, tab, sort, query, 1)
+    fetchPage(token, tab, apiSort, period, query, 1)
       .then((items) => {
         if (cancelled) return
         setLoadError(false)
@@ -86,7 +113,7 @@ export default function CatalogPage() {
         if (!cancelled) setResult({ key, items: [], page: 1, more: false, error: true })
       })
     return () => { cancelled = true }
-  }, [token, tab, sort, query, key, paginated, attempt])
+  }, [token, tab, apiSort, period, query, key, paginated, attempt])
 
   // A tecla "/" foca a busca.
   useEffect(() => {
@@ -101,7 +128,10 @@ export default function CatalogPage() {
   }, [])
 
   const loading = !result || result.key !== key
-  const items = result?.items ?? []
+  const base = result?.items ?? []
+  const items = !query && tab === 'trending' && sort === 'title'
+    ? [...base].sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'))
+    : base
 
   const retry = () => {
     setResult(null)
@@ -115,7 +145,7 @@ export default function CatalogPage() {
     setLoadError(false)
     const page = result.page + 1
     try {
-      const next = await fetchPage(token, tab, sort, query, page)
+      const next = await fetchPage(token, tab, apiSort, period, query, page)
       setResult((prev) =>
         prev && prev.key === key ? { ...prev, items: merge(prev.items, next), page, more: next.length > 0 } : prev)
     } catch {
@@ -124,19 +154,9 @@ export default function CatalogPage() {
       busy.current = false
       setLoadingMore(false)
     }
-  }, [token, tab, sort, query, key, result])
+  }, [token, tab, apiSort, period, query, key, result])
 
-  // Scroll infinito: quando o fim da lista chega perto da tela, busca a próxima página.
-  const canLoadMore = !loading && !!result?.more && !loadError
-  useEffect(() => {
-    const el = sentinel.current
-    if (!el || !canLoadMore) return
-    const io = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) loadMore()
-    }, { rootMargin: '600px 0px' })
-    io.observe(el)
-    return () => io.disconnect()
-  }, [canLoadMore, loadMore])
+  const sentinel = useInfiniteScroll(!loading && !!result?.more && !loadError, loadMore)
 
   return (
     <div className="min-h-svh bg-bg text-white">
@@ -158,8 +178,8 @@ export default function CatalogPage() {
         {query ? (
           <h2 className="mt-12 text-xl font-semibold">Resultados para “{query}”</h2>
         ) : (
-          <div className="mt-12 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
-            <div role="tablist" aria-label="Seções do catálogo" className="flex gap-6 overflow-x-auto sm:gap-8">
+          <>
+            <div role="tablist" aria-label="Seções do catálogo" className="mt-12 flex gap-6 overflow-x-auto sm:gap-8">
               {TABS.map((t) => {
                 const on = t.id === tab
                 return (
@@ -172,20 +192,15 @@ export default function CatalogPage() {
               })}
             </div>
 
-            {tab !== 'trending' && (
-              <div role="group" aria-label="Ordenar por" className="flex items-center gap-2">
-                <span className="mr-1 text-[15px] text-muted">Ordenar</span>
-                {SORTS.map((s) => (
-                  <button key={s.id} aria-pressed={s.id === sort}
-                    onClick={() => setParam('ordem', s.id === 'popularity' ? null : s.param)}
-                    className={`h-9 px-3 text-[15px] font-medium transition active:scale-[0.97] ${
-                      s.id === sort ? 'bg-paper text-ink' : 'bg-surface text-muted hover:text-white'}`}>
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+            <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-3">
+              {tab === 'trending' && (
+                <Segmented label="Período" options={PERIODS} value={period}
+                  onChange={(id) => setParam('periodo', id === 'day' ? null : 'semana')} />
+              )}
+              <Segmented label="Ordenar" options={tab === 'trending' ? TRENDING_SORTS : SORTS} value={sort}
+                onChange={(id) => setParam('ordem', id === 'popularity' ? null : 'alfabetica')} />
+            </div>
+          </>
         )}
 
         {result?.error && !loading && (

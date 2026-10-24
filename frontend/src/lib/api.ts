@@ -1,4 +1,4 @@
-import type { CatalogItem, MediaDetails, MediaFormat } from './catalog'
+import type { CatalogItem, MediaDetails, MediaFormat, TrendingWindow } from './catalog'
 
 export type BrowseCategory = 'movies' | 'tv' | 'anime'
 export type BrowseSort = 'popularity' | 'title'
@@ -6,7 +6,7 @@ export type LibraryStatus = 'watchlist' | 'watched'
 
 export type LibraryEntry = {
   id: string
-  media: CatalogItem
+  media: MediaDetails
   status: LibraryStatus
   rating?: number        
   watchedOn?: string     
@@ -101,13 +101,15 @@ export const api = {
   changePassword: (token: string, data: ChangePasswordData) =>
     request<void>('/api/users/me/password', { method: 'PUT', body: JSON.stringify(data) }, token),
   catalog: {
-    trending: () => request<CatalogItem[]>('/api/catalog/trending'),
+    trending: (period: TrendingWindow = 'week') =>
+      request<CatalogItem[]>(`/api/catalog/trending?window=${period}`),
     search: (token: string, q: string, page = 1) =>
       request<CatalogItem[]>(`/api/catalog/search?q=${encodeURIComponent(q)}&page=${page}`, {}, token),
     details: (token: string, format: MediaFormat, id: number) =>
       request<MediaDetails>(`/api/catalog/${format}/${id}`, {}, token),
     browse: (token: string, category: BrowseCategory, sort: BrowseSort, page = 1) =>
       request<CatalogItem[]>(`/api/catalog/browse?category=${category}&sort=${sort}&page=${page}`, {}, token),
+
   },
     library: {
     entry: (token: string, format: MediaFormat, id: number) =>

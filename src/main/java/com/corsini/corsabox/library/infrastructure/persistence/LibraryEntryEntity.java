@@ -29,51 +29,60 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class LibraryEntryEntity {
-    @Id
-    private UUID id;
+        @Id
+        private UUID id;
 
-    @Column(nullable = false)
-    private UUID userId;
+        @Column(nullable = false)
+        private UUID userId;
 
-    @Column(nullable = false)
-    private int tmdbId;
+        @Column(nullable = false)
+        private int tmdbId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 10)
-    private MediaFormat format;
+        @Enumerated(EnumType.STRING)
+        @Column(nullable = false, length = 10)
+        private MediaFormat format;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 10)
-    private MediaKind kind;
+        @Enumerated(EnumType.STRING)
+        @Column(nullable = false, length = 10)
+        private MediaKind kind;
 
-    @Column(nullable = false)
-    private String title;
+        @Column(nullable = false)
+        private String title;
 
-    @Column
-    private Integer releaseYear;
+        @Column
+        private Integer releaseYear;
 
-    @Column
-    private String posterUrl;
+        @Column
+        private String posterUrl;
 
-    @Column
-    private String backdropUrl;
+        @Column
+        private String backdropUrl;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 10)
-    private EntryStatus status;
+        @Enumerated(EnumType.STRING)
+        @Column(nullable = false, length = 10)
+        private EntryStatus status;
 
-    @Column
-    private Integer ratingHalves;
+        @Column
+        private Integer ratingHalves;
 
-    @Column
-    private LocalDate watchedOn;
+        @Column
+        private LocalDate watchedOn;
 
-    @Column(length = 5000)
-    private String review;
+        @Column(length = 5000)
+        private String review;
 
-    @Column(nullable = false, updatable = false)
-    private Instant createdAt;
+        @Column(nullable = false, updatable = false)
+        private Instant createdAt;
 
-    @Column(nullable = false)
-    private Instant updatedAt;
+        @Column(nullable = false)
+        private Instant updatedAt;
+    
+        @Column
+        private LocalDate releaseDate;
+
+        @Column
+        private Integer runtimeMinutes;
+
+        @Column(length = 500)
+        private String genres;   
 }

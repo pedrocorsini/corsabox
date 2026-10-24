@@ -4,7 +4,7 @@ import { useAuth } from '../auth/AuthContext'
 import { Brand } from '../components/Brand'
 import { LiveDiary } from '../components/LiveDiary'
 import { PosterSkeleton, PosterStrip } from '../components/PosterStrip'
-import { KIND_LABEL, itemKey, useTrending } from '../lib/catalog'
+import { KIND_LABEL, PERIODS, itemKey, useTrending, type TrendingWindow } from '../lib/catalog'
 import { Wordmark } from '../components/Wordmark'
 import { useScrollEffects } from '../lib/motion'
 
@@ -41,7 +41,6 @@ function PrimaryCta({ className = '', onPaper = false }: { className?: string; o
   )
 }
 
-/* Botões da primeira tela, sobre o campo escuro: os dois com preenchimento forte */
 function HeroActions() {
   const { token } = useAuth()
   const base = 'inline-flex h-11 items-center justify-center px-4 text-[15px] font-semibold transition active:scale-[0.97] md:h-12 md:px-6'
@@ -56,10 +55,16 @@ function HeroActions() {
 
 export default function LandingPage() {
   const [hint, setHint] = useState<string>(GROUPS[0].items[0][1])
-  const { items, loading } = useTrending()
+  const [period, setPeriod] = useState<TrendingWindow>('day')
+  const { items, loading, pending } = useTrending(period)
   const [activeKey, setActiveKey] = useState<string | null>(null)
   const paused = useRef(false)
   useScrollEffects()
+
+  const changePeriod = (p: TrendingWindow) => {
+    setPeriod(p)
+    setActiveKey(null)
+  }
 
   useEffect(() => {
     if (items.length === 0) return
@@ -107,17 +112,28 @@ export default function LandingPage() {
               <div key={itemKey(featured)} className="fade-in md:col-span-3 md:col-start-10 md:self-end">
                 <p className="wide text-2xl md:text-3xl">{featured.title}</p>
                 <p className="mt-1 text-[15px] text-muted">
-                  Em alta agora · {KIND_LABEL[featured.kind]}{featured.year ? ` · ${featured.year}` : ''}
+                  Em alta {period === 'day' ? 'hoje' : 'nesta semana'} · {KIND_LABEL[featured.kind]}{featured.year ? ` · ${featured.year}` : ''}
                 </p>
               </div>
             )}
           </div>
 
-          <div className="relative mt-10 h-[40svh] md:mt-auto md:h-[44svh]">
+          <div role="group" aria-label="Período" className="relative mt-10 flex flex-wrap items-center gap-2 px-5 md:mt-auto md:px-8">
+            <span className="mr-2 text-[15px]">Em alta</span>
+            {PERIODS.map((p) => (
+              <button key={p.id} aria-pressed={p.id === period} onClick={() => changePeriod(p.id)}
+                className={`h-9 px-3 text-[15px] font-medium transition active:scale-[0.97] ${
+                  p.id === period ? 'bg-paper text-ink' : 'bg-bg/70 text-white hover:bg-bg'}`}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+          <div className={`relative mt-4 h-[40svh] transition-opacity duration-150 md:h-[44svh] ${pending ? 'opacity-50' : ''}`}>
             {loading ? (
               <PosterSkeleton />
             ) : (
-              <PosterStrip items={items} activeKey={activeKey ?? itemKey(featured)}
+              <PosterStrip key={itemKey(items[0])} items={items} activeKey={activeKey ?? itemKey(featured)}
                 onActive={(key) => { paused.current = true; setActiveKey(key) }}
                 onLeave={() => { paused.current = false }} />
             )}
@@ -158,8 +174,8 @@ export default function LandingPage() {
               <h2 data-reveal className="text-[28px] font-semibold leading-tight md:text-[32px]">Do cadastro ao primeiro registro</h2>
               <div className="mt-12 max-w-[560px] space-y-14 text-[1.0625rem] leading-[1.6] md:text-lg">
                 <p data-reveal><strong className="font-semibold">Para começar,</strong> crie sua conta com email e senha. O login com Google chega depois.</p>
-                <p data-reveal><strong className="font-semibold">No catálogo,</strong> procure um filme, uma série ou um anime e abra a página do título para ver sinopse, elenco e direção.</p>
-                <p data-reveal><strong className="font-semibold">Daqui em diante,</strong> marque o que você viu e guarde o que quer ver. As duas listas ficam separadas e você muda um título de lugar quando quiser.</p>
+                <p data-reveal><strong className="font-semibold">No catálogo,</strong> busque um título ou navegue por Em alta, Filmes, Séries e Animes. Na página de cada um você vê sinopse, elenco, direção, duração e gêneros.</p>
+                <p data-reveal><strong className="font-semibold">Daqui em diante,</strong> registre o que você viu com nota de 0 a 5, data e review, e guarde o que quer ver. Os dois ficam na sua biblioteca e você muda um título de lugar quando quiser.</p>
               </div>
             </div>
             <div data-reveal className="self-start md:col-span-5 md:col-start-8 md:sticky md:top-24">
@@ -182,11 +198,12 @@ export default function LandingPage() {
 
       {/* Rodapé: revelado por baixo da página */}
       <footer data-field="ink" className="sticky bottom-0 z-0 flex min-h-svh flex-col justify-between bg-bg px-5 pb-5 pt-10 text-white md:px-8">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-10 text-[15px] md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-10 text-[15px] md:grid-cols-5">
           <div className="space-y-1 text-muted"><p className="text-white">Explorar</p><a href="#recursos" className="block hover:text-white">Recursos</a><a href="#como-funciona" className="block hover:text-white">Como funciona</a></div>
           <div className="space-y-1 text-muted"><p className="text-white">Conta</p><Link to="/login" className="block hover:text-white">Entrar</Link><Link to="/register" className="block hover:text-white">Criar conta</Link></div>
-          <div className="space-y-1 text-muted"><p className="text-white">Dados</p><p>Este produto usa a API do TMDB, mas não é endossado nem certificado pelo TMDB.</p></div>
-          <div className="space-y-1 text-muted"><p className="text-white">Status</p><p>Em construção. Cadastro e login já funcionam.</p></div>
+          <div className="space-y-1 text-muted"><p className="text-white">Informações</p><p>Este é um produto de código aberto sem fins lucrativos apenas para portifólio. Usa a API do TMDB, mas não é endossado nem certificado pelo TMDB.</p><a href="https://github.com/pedrocorsini/corsabox" target="_blank" rel="noopener noreferrer" className="block hover:text-white">Repositório Público</a></div>
+          <div className="space-y-1 text-muted"><p className="text-white">Suporte</p><p><a href="mailto:pedrocorsini013@gmail.com" className="block hover:text-white">Envie um e-mail para entrar em contato com o suporte!</a></p></div>
+          <div className="space-y-1 text-muted"><p className="text-white">Status</p><p>Em construção. Catálogo, biblioteca, notas e reviews já funcionam. Episódios de Séries e Animes ainda serão adicionados.</p></div>
         </div>
         <div>
           <Wordmark />

@@ -1,5 +1,6 @@
 package com.corsini.corsabox.library.infrastructure.persistence;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -44,15 +45,32 @@ public class LibraryJpaRepository implements LibraryRepository {
         entity.setReview(e.getReview());
         entity.setCreatedAt(e.getCreatedAt());
         entity.setUpdatedAt(e.getUpdatedAt());
+        entity.setReleaseDate(m.releaseDate());
+        entity.setRuntimeMinutes(m.runtimeMinutes());
+        entity.setGenres(joinGenres(m.genres()));
         return entity;
     }
 
     private static LibraryEntry toDomain(LibraryEntryEntity e) {
         var media = new MediaSnapshot(e.getTmdbId(), e.getFormat(), e.getKind(), e.getTitle(),
-                e.getReleaseYear(), e.getPosterUrl(), e.getBackdropUrl());
+            e.getReleaseYear(), e.getReleaseDate(), e.getRuntimeMinutes(), splitGenres(e.getGenres()),
+            e.getPosterUrl(), e.getBackdropUrl());
         return LibraryEntry.restore(e.getId(), new UserId(e.getUserId()), media, e.getStatus(),
                 e.getRatingHalves() == null ? null : new Rating(e.getRatingHalves()),
                 e.getWatchedOn(), e.getReview(), e.getCreatedAt(), e.getUpdatedAt());
+    }
+    
+    private static String joinGenres(List<String> genres) {
+        return String.join("|", genres);
+    }
+
+    private static List<String> splitGenres(String value) {
+        return value == null || value.isBlank() ? List.of() : List.of(value.split("\\|"));
+    }
+    
+    @Override
+    public void updateMedia(UUID entryId, MediaSnapshot media) {
+        repo.updateMetadata(entryId, media.releaseDate(), media.runtimeMinutes(), joinGenres(media.genres()));
     }
 
     @Override

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.corsini.corsabox.catalog.application.port.CatalogProvider;
 import com.corsini.corsabox.catalog.domain.CatalogItem;
+import com.corsini.corsabox.catalog.domain.TrendingWindow;
 
 @Service
 public class GetTrendingUseCase {
@@ -15,7 +16,8 @@ public class GetTrendingUseCase {
         this.provider = provider;
     }
 
-    public List<CatalogItem> execute() {
-        return provider.trending();
+    public List<CatalogItem> execute(TrendingWindow window) {
+        return provider.trending(window);
     }
+    
 }

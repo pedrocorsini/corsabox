@@ -4,12 +4,13 @@ import { Poster } from '../components/Poster'
 import { RatingMeter } from '../components/Rating'
 import { Button } from '../components/ui'
 import type { LibraryEntry, LibraryStatus } from '../lib/api'
-import { KIND_LABEL, titlePath } from '../lib/catalog'
+import { KIND_LABEL, metaLine, titlePath } from '../lib/catalog'
 import { formatDay } from '../lib/format'
 import { useLibraryList } from '../lib/library'
 import { useScrollEffects } from '../lib/motion'
 import { useInfiniteScroll } from '../lib/useInfiniteScroll'
 import { Loader2 } from 'lucide-react'
+
 
 const TABS: { status: LibraryStatus; param: string; label: string }[] = [
   { status: 'watched', param: 'assistidos', label: 'Assistidos' },
@@ -27,7 +28,7 @@ function WatchedRow({ entry, index }: { entry: LibraryEntry; index: number }) {
         <Poster item={m} />
         <div className="min-w-0 self-center">
           <p className="truncate text-lg font-semibold transition-colors group-hover:text-accent">{m.title}</p>
-          <p className="text-[15px] text-muted">{KIND_LABEL[m.kind]}{m.year ? ` · ${m.year}` : ''}</p>
+          <p className="text-[15px] text-muted">{metaLine(m)}</p>
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
             {entry.rating !== undefined
               ? <RatingMeter value={entry.rating} size="sm" />

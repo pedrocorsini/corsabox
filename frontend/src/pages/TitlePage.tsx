@@ -9,8 +9,8 @@ import { RatingMeter } from '../components/Rating'
 import { WatchedForm, type WatchedPayload } from '../components/WatchedForm'
 import { Button, ErrorBanner } from '../components/ui'
 import { api, ApiError, type LibraryEntry } from '../lib/api'
-import { KIND_LABEL, type MediaDetails, type MediaFormat } from '../lib/catalog'
-import { formatDay, formatInstant, formatRuntime } from '../lib/format'
+import { metaLine, type MediaDetails, type MediaFormat } from '../lib/catalog'
+import { formatDay, formatInstant } from '../lib/format'
 
 function describe(e: unknown) {
   if (e instanceof ApiError) {
@@ -21,15 +21,6 @@ function describe(e: unknown) {
   }
   return 'Não foi possível concluir. Tente novamente.'
 }
-
-function metaLine(item: MediaDetails) {
-  return [
-    KIND_LABEL[item.kind],
-    item.releaseDate ? formatDay(item.releaseDate) : null,
-    item.runtimeMinutes ? formatRuntime(item.runtimeMinutes, item.format === 'tv') : null,
-    item.genres?.join(', '),
-  ].filter(Boolean).join(' · ')
-} 
 
 function Credits({ item, className = '' }: { item: MediaDetails; className?: string }) {
   const rows = [
