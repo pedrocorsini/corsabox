@@ -18,7 +18,7 @@ public record LibraryEntryResponse(UUID id, CatalogItemResponse media, String st
         var m = e.getMedia();
         var media = new CatalogItemResponse(m.tmdbId(), m.title(),
                 m.kind().name().toLowerCase(Locale.ROOT), m.format().path(),
-                m.year(), m.posterUrl(), m.backdropUrl());
+                m.year(), null, m.posterUrl(), m.backdropUrl());
         return new LibraryEntryResponse(
             e.getId(),
             media,

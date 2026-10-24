@@ -6,6 +6,12 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.text.Collator;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Locale;
+import com.corsini.corsabox.catalog.domain.BrowseCategory;
+import com.corsini.corsabox.catalog.domain.BrowseSort;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +31,8 @@ import com.corsini.corsabox.catalog.application.port.CatalogProvider;
 import com.corsini.corsabox.catalog.domain.CatalogItem;
 import com.corsini.corsabox.catalog.domain.MediaKind;
 import com.corsini.corsabox.catalog.domain.exception.CatalogUnavailableException;
+import com.corsini.corsabox.catalog.infrastructure.tmdb.TmdbCatalogProvider.TmdbGenre;
+import com.corsini.corsabox.catalog.infrastructure.tmdb.TmdbCatalogProvider.TmdbResult;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -71,18 +79,18 @@ public class TmdbCatalogProvider implements CatalogProvider {
                 .build(query));
     }
 
-    private List<CatalogItem> fetch(Function<UriBuilder, URI> uri) {
+    private List<TmdbResult> fetchResults(Function<UriBuilder, URI> uri) {
         try {
             var body = http.get().uri(uri).retrieve().body(TmdbPage.class);
-            if (body == null || body.results() == null) return List.of();
-            return body.results().stream()
-                    .map(this::toItem)
-                    .flatMap(Optional::stream)
-                    .toList();
+            return body == null || body.results() == null ? List.of() : body.results();
         } catch (RestClientException e) {
             log.error("Falha ao consultar a TMDB", e);
             throw new CatalogUnavailableException(e);
         }
+    }
+
+    private List<CatalogItem> fetch(Function<UriBuilder, URI> uri) {
+        return fetchResults(uri).stream().map(this::toItem).flatMap(Optional::stream).toList();
     }
 
     private Optional<CatalogItem> toItem(TmdbResult r) {
@@ -95,8 +103,12 @@ public class TmdbCatalogProvider implements CatalogProvider {
         var kind = isAnime(r) ? MediaKind.ANIME : movie ? MediaKind.MOVIE : MediaKind.TV;
         var date = movie ? r.releaseDate() : r.firstAirDate();
         var format = movie ? MediaFormat.MOVIE : MediaFormat.TV;
-        return Optional.of(new CatalogItem(r.id(), title, kind, format, year(date),
-                image(r.posterPath(), "w500"), image(r.backdropPath(), "w1280")));
+        return Optional.of(new CatalogItem(r.id(), title, kind, format, year(date), text(r.overview()),
+            image(r.posterPath(), "w500"), image(r.backdropPath(), "w1280")));
+    }
+
+    private static String text(String s) {
+        return s == null || s.isBlank() ? null : s.strip();
     }
 
     private static boolean isAnime(TmdbResult r) {
@@ -122,25 +134,38 @@ public class TmdbCatalogProvider implements CatalogProvider {
     record TmdbPage(List<TmdbResult> results) {}
     @JsonIgnoreProperties(ignoreUnknown = true)
     record TmdbGenre(int id) {}
-
     @JsonIgnoreProperties(ignoreUnknown = true)
     record TmdbResult(
             int id,
             @JsonProperty("media_type") String mediaType,
             String title,
             String name,
+            String overview,
             @JsonProperty("release_date") String releaseDate,
             @JsonProperty("first_air_date") String firstAirDate,
             @JsonProperty("poster_path") String posterPath,
             @JsonProperty("backdrop_path") String backdropPath,
             @JsonProperty("original_language") String originalLanguage,
-            @JsonProperty("genre_ids") List<Integer> genreIds) {}
+            @JsonProperty("genre_ids") List<Integer> genreIds,
+            Double popularity) {
+
+        TmdbResult withMediaType(String type) {
+            return new TmdbResult(id, type, title, name, overview, releaseDate, firstAirDate,
+                    posterPath, backdropPath, originalLanguage, genreIds, popularity);
+        }
+
+        String label() {
+            var t = "movie".equals(mediaType) ? title : name;
+            return t == null ? "" : t;
+        }
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     record TmdbDetail(
             int id,
             String title,
             String name,
+            String overview,
             @JsonProperty("release_date") String releaseDate,
             @JsonProperty("first_air_date") String firstAirDate,
             @JsonProperty("poster_path") String posterPath,
@@ -160,8 +185,9 @@ public class TmdbCatalogProvider implements CatalogProvider {
             var genreIds = d.genres() == null
                     ? List.<Integer>of()
                     : d.genres().stream().map(TmdbGenre::id).toList();
-            var result = new TmdbResult(d.id(), format.path(), d.title(), d.name(), d.releaseDate(),
-                    d.firstAirDate(), d.posterPath(), d.backdropPath(), d.originalLanguage(), genreIds);
+            var result = new TmdbResult(d.id(), format.path(), d.title(), d.name(), d.overview(),
+                d.releaseDate(), d.firstAirDate(), d.posterPath(), d.backdropPath(),
+                d.originalLanguage(), genreIds, null);
             return toItem(result).orElseThrow(() -> new CatalogItemNotFoundException(format, id));
         } catch (HttpClientErrorException.NotFound e) {
             throw new CatalogItemNotFoundException(format, id);
@@ -169,5 +195,55 @@ public class TmdbCatalogProvider implements CatalogProvider {
             log.error("Falha ao consultar a TMDB", e);
             throw new CatalogUnavailableException(e);
         }
+    }
+
+    @Override
+    @Cacheable(cacheNames = "tmdb-browse", key = "#category + ':' + #sort + ':' + #page")
+    public List<CatalogItem> browse(BrowseCategory category, BrowseSort sort, int page) {
+        var results = switch (category) {
+            case MOVIES -> discover(MediaFormat.MOVIE, sort, page, false);
+            case TV -> discover(MediaFormat.TV, sort, page, false);
+            case ANIME -> mergeSorted(discover(MediaFormat.MOVIE, sort, page, true),
+                                    discover(MediaFormat.TV, sort, page, true), sort);
+        };
+        var wantAnime = category == BrowseCategory.ANIME;
+        return results.stream()
+                .map(this::toItem)
+                .flatMap(Optional::stream)
+                .filter(i -> wantAnime == (i.kind() == MediaKind.ANIME))
+                .toList();
+    }
+
+    private List<TmdbResult> discover(MediaFormat format, BrowseSort sort, int page, boolean animeOnly) {
+        var sortBy = switch (sort) {
+            case POPULARITY -> "popularity.desc";
+            case TITLE -> format == MediaFormat.MOVIE ? "title.asc" : "name.asc";
+        };
+        return fetchResults(u -> {
+            var b = u.path("/discover/{type}")
+                    .queryParam("language", language)
+                    .queryParam("sort_by", sortBy)
+                    .queryParam("page", page)
+                    .queryParam("include_adult", false);
+            // Sem este piso, a ordem alfabética começa por títulos obscuros sem pôster.
+            if (sort == BrowseSort.TITLE) b = b.queryParam("vote_count.gte", 100);
+            if (animeOnly) b = b.queryParam("with_genres", ANIMATION_GENRE)
+                                .queryParam("with_original_language", "ja");
+            return b.build(format.path());
+        }).stream().map(r -> r.withMediaType(format.path())).toList();
+    }
+
+    private static List<TmdbResult> mergeSorted(List<TmdbResult> a, List<TmdbResult> b, BrowseSort sort) {
+        var all = new ArrayList<>(a);
+        all.addAll(b);
+        Comparator<TmdbResult> order;
+        if (sort == BrowseSort.POPULARITY) {
+            order = Comparator.comparingDouble((TmdbResult r) -> r.popularity() == null ? 0 : r.popularity()).reversed();
+        } else {
+            var collator = Collator.getInstance(Locale.forLanguageTag("pt-BR"));
+            order = Comparator.comparing(TmdbResult::label, collator);
+        }
+        all.sort(order);
+        return all;
     }
 }

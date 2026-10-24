@@ -67,3 +67,25 @@ body {
   .notice-in { animation-name: notice-fade; }
 }
 
+dialog.sheet {
+  margin: auto; padding: 0; width: min(26rem, calc(100vw - 2.5rem));
+  background: var(--color-surface); color: var(--color-paper);
+  opacity: 0; transform: translateY(6px) scale(.97);
+  transition: opacity .14s var(--ease-out), transform .14s var(--ease-out),
+    overlay .14s allow-discrete, display .14s allow-discrete;
+}
+dialog.sheet[open] { opacity: 1; transform: none; transition-duration: .2s; }
+@starting-style { dialog.sheet[open] { opacity: 0; transform: translateY(6px) scale(.97); } }
+
+dialog.sheet::backdrop {
+  background: rgb(0 0 0 / 0);
+  transition: background-color .14s var(--ease-out), overlay .14s allow-discrete, display .14s allow-discrete;
+}
+dialog.sheet[open]::backdrop { background: rgb(0 0 0 / .6); transition-duration: .2s; }
+@starting-style { dialog.sheet[open]::backdrop { background: rgb(0 0 0 / 0); } }
+
+html:has(dialog[open]) { overflow: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.sheet, dialog.sheet[open] { transform: none; }
+}

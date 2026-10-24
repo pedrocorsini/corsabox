@@ -1,4 +1,19 @@
-import type { CatalogItem } from './catalog'
+import type { CatalogItem, MediaFormat } from './catalog'
+
+export type BrowseCategory = 'movies' | 'tv' | 'anime'
+export type BrowseSort = 'popularity' | 'title'
+export type LibraryStatus = 'watchlist' | 'watched'
+
+export type LibraryEntry = {
+  id: string
+  media: CatalogItem
+  status: LibraryStatus
+  rating?: number        
+  watchedOn?: string     
+  review?: string
+  addedAt: string
+  updatedAt: string
+}
 
 export type User = {
   id: string
@@ -16,6 +31,9 @@ export type RegisterData = {
   email: string
   password: string
 }
+
+export type WatchedData = { rating: number | null; watchedOn: string | null; review: string | null }
+export type Page<T> = { content: T[]; last: boolean; number: number; totalElements: number }
 
 export type UpdateProfileData = Partial<Pick<User, 'firstName' | 'lastName' | 'username'>>
 
@@ -73,5 +91,23 @@ export const api = {
     trending: () => request<CatalogItem[]>('/api/catalog/trending'),
     search: (token: string, q: string, page = 1) =>
       request<CatalogItem[]>(`/api/catalog/search?q=${encodeURIComponent(q)}&page=${page}`, {}, token),
+    details: (token: string, format: MediaFormat, id: number) =>
+      request<CatalogItem>(`/api/catalog/${format}/${id}`, {}, token),
+    browse: (token: string, category: BrowseCategory, sort: BrowseSort, page = 1) =>
+      request<CatalogItem[]>(`/api/catalog/browse?category=${category}&sort=${sort}&page=${page}`, {}, token),
+  },
+    library: {
+    entry: (token: string, format: MediaFormat, id: number) =>
+      request<LibraryEntry>(`/api/library/entries/${format}/${id}`, {}, token),
+    list: (token: string, status: LibraryStatus, page = 0, size = 24) =>
+      request<Page<LibraryEntry>>(`/api/library/${status}?page=${page}&size=${size}`, {}, token),
+    addToWatchlist: (token: string, format: MediaFormat, id: number) =>
+      request<LibraryEntry>(`/api/library/watchlist/${format}/${id}`, { method: 'PUT' }, token),
+    removeFromWatchlist: (token: string, format: MediaFormat, id: number) =>
+      request<void>(`/api/library/watchlist/${format}/${id}`, { method: 'DELETE' }, token),
+    markWatched: (token: string, format: MediaFormat, id: number, data: WatchedData) =>
+      request<LibraryEntry>(`/api/library/watched/${format}/${id}`, { method: 'PUT', body: JSON.stringify(data) }, token),
+    removeWatched: (token: string, format: MediaFormat, id: number) =>
+      request<void>(`/api/library/watched/${format}/${id}`, { method: 'DELETE' }, token),
   },
 }

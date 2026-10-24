@@ -48,3 +48,18 @@ export function ErrorBanner({ children }: { children: ReactNode }) {
 export function SuccessBanner({ children }: { children: ReactNode }) {
   return <div role="status" className="bg-accent/15 px-3.5 py-3 text-sm text-accent">{children}</div>
 }
+
+type ButtonProps = ComponentProps<'button'> & { variant?: 'primary' | 'secondary'; loading?: boolean }
+
+export function Button({ variant = 'secondary', loading = false, className = '', disabled, type = 'button', children, ...props }: ButtonProps) {
+  const tone = variant === 'primary'
+    ? 'bg-accent text-ink enabled:hover:brightness-105'
+    : 'bg-surface text-white enabled:hover:bg-line'
+  return (
+    <button type={type} disabled={loading || disabled} {...props}
+      className={`inline-flex h-12 items-center justify-center gap-2 px-6 font-semibold transition enabled:active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 ${tone} ${className}`}>
+      {loading && <Loader2 className="animate-spin" size={16} />}
+      {children}
+    </button>
+  )
+}

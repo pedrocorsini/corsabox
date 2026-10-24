@@ -9,9 +9,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.corsini.corsabox.catalog.api.response.CatalogItemResponse;
+import com.corsini.corsabox.catalog.application.service.BrowseCatalogUseCase;
 import com.corsini.corsabox.catalog.application.service.GetMediaDetailsUseCase;
 import com.corsini.corsabox.catalog.application.service.GetTrendingUseCase;
 import com.corsini.corsabox.catalog.application.service.SearchCatalogUseCase;
+import com.corsini.corsabox.catalog.domain.BrowseCategory;
+import com.corsini.corsabox.catalog.domain.BrowseSort;
 import com.corsini.corsabox.catalog.domain.MediaFormat;
 
 @RestController
@@ -20,12 +23,14 @@ public class CatalogController {
     private final GetTrendingUseCase getTrending;
     private final SearchCatalogUseCase searchCatalog;
     private final GetMediaDetailsUseCase getDetails;
+    private final BrowseCatalogUseCase browseCatalog;
 
     public CatalogController(GetTrendingUseCase getTrending, SearchCatalogUseCase searchCatalog,
-                             GetMediaDetailsUseCase getDetails) {
+                             GetMediaDetailsUseCase getDetails, BrowseCatalogUseCase browseCatalog) {
         this.getTrending = getTrending;
         this.searchCatalog = searchCatalog;
         this.getDetails = getDetails;
+        this.browseCatalog = browseCatalog;
     }
 
     @GetMapping("/trending")
@@ -42,5 +47,13 @@ public class CatalogController {
     @GetMapping("/{format}/{id}")
     public CatalogItemResponse details(@PathVariable String format, @PathVariable int id) {
         return CatalogItemResponse.from(getDetails.execute(MediaFormat.from(format), id));
+    }
+
+    @GetMapping("/browse")
+    public List<CatalogItemResponse> browse(@RequestParam String category,
+                                            @RequestParam(defaultValue = "popularity") String sort,
+                                            @RequestParam(defaultValue = "1") int page) {
+        return browseCatalog.execute(BrowseCategory.from(category), BrowseSort.from(sort), page)
+                .stream().map(CatalogItemResponse::from).toList();
     }
 }
