@@ -7,6 +7,9 @@ import CatalogPage from './pages/CatalogPage'
 import ProfilePage from './pages/ProfilePage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
+import LibraryPage from './pages/LibraryPage'
+import TitlePage from './pages/TitlePage'
+
 
 export default function App() {
   return (
@@ -20,6 +23,8 @@ export default function App() {
       </Route>
       <Route element={<RequireAuth />}>
         <Route path="/catalogo" element={<CatalogPage />} />
+          <Route path="/titulo/:format/:id" element={<TitlePage />} />
+          <Route path="/biblioteca" element={<LibraryPage />} />
         <Route path="/perfil" element={<ProfilePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

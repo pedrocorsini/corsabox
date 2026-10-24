@@ -4,7 +4,7 @@ import { useAuth } from '../auth/AuthContext'
 import { Brand } from '../components/Brand'
 import { LiveDiary } from '../components/LiveDiary'
 import { PosterSkeleton, PosterStrip } from '../components/PosterStrip'
-import { KIND_LABEL, useTrending } from '../lib/catalog'
+import { KIND_LABEL, itemKey, useTrending } from '../lib/catalog'
 import { Wordmark } from '../components/Wordmark'
 import { useScrollEffects } from '../lib/motion'
 
@@ -57,20 +57,24 @@ function HeroActions() {
 export default function LandingPage() {
   const [hint, setHint] = useState<string>(GROUPS[0].items[0][1])
   const { items, loading } = useTrending()
-  const [activeId, setActiveId] = useState<number | null>(null)
-  useEffect(() => { setActiveId(items[0]?.id ?? null) }, [items])
+  const [activeKey, setActiveKey] = useState<string | null>(null)
   const paused = useRef(false)
   useScrollEffects()
+
   useEffect(() => {
     if (items.length === 0) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const t = setInterval(() => {
       if (paused.current) return
-      setActiveId((id) => items[(items.findIndex((i) => i.id === id) + 1) % items.length].id)
+      setActiveKey((key) => {
+        const current = items.findIndex((i) => itemKey(i) === key)
+        return itemKey(items[((current < 0 ? 0 : current) + 1) % items.length])
+      })
     }, 5000)
     return () => clearInterval(t)
   }, [items])
-  const featured = items.find((i) => i.id === activeId) ?? items[0]
+
+  const featured = items.find((i) => itemKey(i) === activeKey) ?? items[0]
 
   return (
     <>
@@ -79,7 +83,7 @@ export default function LandingPage() {
         <section data-field="ink" className="relative flex min-h-svh flex-col overflow-hidden bg-bg py-5 text-white md:py-6">
           {featured?.backdropUrl && (
             <>
-              <img key={featured.id} src={featured.backdropUrl} alt="" className="fade-in absolute inset-0 h-full w-full object-cover" />
+              <img key={itemKey(featured)} src={featured.backdropUrl} alt="" className="fade-in absolute inset-0 h-full w-full object-cover" />
               <div className="absolute inset-0 bg-bg/75" />
             </>
           )}
@@ -100,7 +104,7 @@ export default function LandingPage() {
               </p>
             </div>
             {featured && (
-              <div key={featured.id} className="fade-in md:col-span-3 md:col-start-10 md:self-end">
+              <div key={itemKey(featured)} className="fade-in md:col-span-3 md:col-start-10 md:self-end">
                 <p className="wide text-2xl md:text-3xl">{featured.title}</p>
                 <p className="mt-1 text-[15px] text-muted">
                   Em alta agora · {KIND_LABEL[featured.kind]}{featured.year ? ` · ${featured.year}` : ''}
@@ -113,8 +117,8 @@ export default function LandingPage() {
             {loading ? (
               <PosterSkeleton />
             ) : (
-              <PosterStrip items={items} activeId={activeId ?? -1}
-                onActive={(id) => { paused.current = true; setActiveId(id) }}
+              <PosterStrip items={items} activeKey={activeKey ?? itemKey(featured)}
+                onActive={(key) => { paused.current = true; setActiveKey(key) }}
                 onLeave={() => { paused.current = false }} />
             )}
           </div>
