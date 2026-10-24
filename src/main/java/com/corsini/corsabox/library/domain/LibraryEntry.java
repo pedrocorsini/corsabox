@@ -15,7 +15,7 @@ public class LibraryEntry {
 
     private final UUID id;
     private final UserId userId;
-    private final MediaSnapshot media;
+    private MediaSnapshot media;
     private final Instant createdAt;
     private EntryStatus status;
     private Rating rating;
@@ -55,7 +55,7 @@ public class LibraryEntry {
         return new LibraryEntry(id, userId, media, status, rating, watchedOn, review, createdAt, updatedAt);
     }
 
-    /** Serve para marcar como assistido (vindo da fila ou não) e para corrigir os dados depois. */
+    // Serve para marcar como assistido (vindo da fila ou não) e para corrigir os dados depois.
     public void markWatched(Rating rating, LocalDate watchedOn, String review) {
         // Um dia de folga para fusos à frente do UTC
         if (watchedOn != null && watchedOn.isAfter(LocalDate.now(ZoneOffset.UTC).plusDays(1)))
@@ -70,5 +70,8 @@ public class LibraryEntry {
         this.watchedOn = watchedOn;
         this.review = text;
         this.updatedAt = Instant.now();
+    }
+    public void refreshMedia(MediaSnapshot media) {
+        this.media = media;
     }
 }

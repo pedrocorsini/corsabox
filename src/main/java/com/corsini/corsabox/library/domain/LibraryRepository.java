@@ -14,4 +14,5 @@ public interface LibraryRepository {
     Optional<LibraryEntry> find(UserId userId, int tmdbId, MediaFormat format);
     Page<LibraryEntry> findByStatus(UserId userId, EntryStatus status, Pageable pageable);
     void deleteById(UUID id);
+    void updateMedia(UUID entryId, MediaSnapshot media);
 }

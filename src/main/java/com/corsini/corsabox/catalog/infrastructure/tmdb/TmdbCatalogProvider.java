@@ -35,6 +35,7 @@ import com.corsini.corsabox.catalog.domain.CatalogItem;
 import com.corsini.corsabox.catalog.domain.MediaDetails;
 import com.corsini.corsabox.catalog.domain.MediaFormat;
 import com.corsini.corsabox.catalog.domain.MediaKind;
+import com.corsini.corsabox.catalog.domain.TrendingWindow;
 import com.corsini.corsabox.catalog.domain.exception.CatalogItemNotFoundException;
 import com.corsini.corsabox.catalog.domain.exception.CatalogUnavailableException;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -68,11 +69,11 @@ public class TmdbCatalogProvider implements CatalogProvider {
     // Listas
 
     @Override
-    @Cacheable("tmdb-trending")
-    public List<CatalogItem> trending() {
-        return fetch(u -> u.path("/trending/all/week")
+    @Cacheable(cacheNames = "tmdb-trending", key = "#window")
+    public List<CatalogItem> trending(TrendingWindow window) {
+        return fetch(u -> u.path("/trending/all/{w}")
                 .queryParam("language", language)
-                .build());
+                .build(window.path()));
     }
 
     @Override

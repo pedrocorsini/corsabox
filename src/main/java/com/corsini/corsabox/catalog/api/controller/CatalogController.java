@@ -17,6 +17,7 @@ import com.corsini.corsabox.catalog.application.service.SearchCatalogUseCase;
 import com.corsini.corsabox.catalog.domain.BrowseCategory;
 import com.corsini.corsabox.catalog.domain.BrowseSort;
 import com.corsini.corsabox.catalog.domain.MediaFormat;
+import com.corsini.corsabox.catalog.domain.TrendingWindow;
 
 @RestController
 @RequestMapping("/api/catalog")
@@ -35,8 +36,8 @@ public class CatalogController {
     }
 
     @GetMapping("/trending")
-    public List<CatalogItemResponse> trending() {
-        return getTrending.execute().stream().map(CatalogItemResponse::from).toList();
+    public List<CatalogItemResponse> trending(@RequestParam(defaultValue = "week") String window) {
+        return getTrending.execute(TrendingWindow.from(window)).stream().map(CatalogItemResponse::from).toList();
     }
 
     @GetMapping("/search")
