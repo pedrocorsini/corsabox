@@ -3,7 +3,7 @@ package com.corsini.corsabox.catalog.application.service;
 import org.springframework.stereotype.Service;
 
 import com.corsini.corsabox.catalog.application.port.CatalogProvider;
-import com.corsini.corsabox.catalog.domain.CatalogItem;
+import com.corsini.corsabox.catalog.domain.MediaDetails;
 import com.corsini.corsabox.catalog.domain.MediaFormat;
 
 @Service
@@ -14,7 +14,7 @@ public class GetMediaDetailsUseCase {
         this.provider = provider;
     }
 
-    public CatalogItem execute(MediaFormat format, int id) {
+    public MediaDetails execute(MediaFormat format, int id) {
         return provider.details(format, id);
     }
 }

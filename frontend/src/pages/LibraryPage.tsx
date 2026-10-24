@@ -8,6 +8,8 @@ import { KIND_LABEL, titlePath } from '../lib/catalog'
 import { formatDay } from '../lib/format'
 import { useLibraryList } from '../lib/library'
 import { useScrollEffects } from '../lib/motion'
+import { useInfiniteScroll } from '../lib/useInfiniteScroll'
+import { Loader2 } from 'lucide-react'
 
 const TABS: { status: LibraryStatus; param: string; label: string }[] = [
   { status: 'watched', param: 'assistidos', label: 'Assistidos' },
@@ -49,7 +51,7 @@ function WatchlistCard({ entry, index }: { entry: LibraryEntry; index: number })
         <p className="text-sm text-muted">{KIND_LABEL[m.kind]}{m.year ? ` · ${m.year}` : ''}</p>
       </Link>
       <Link to={`${titlePath(m)}?assistir=1`} className="mt-1 inline-block text-sm font-medium text-accent hover:underline">
-        Assisti
+        Marcar como Assistido
       </Link>
     </li>
   )
@@ -63,6 +65,7 @@ export default function LibraryPage() {
   const watchlist = useLibraryList('watchlist')
   const lists = { watched, watchlist }
   const list = lists[active.status]
+  const sentinel = useInfiniteScroll(!list.loading && list.hasMore && !list.loadError, list.loadMore)
 
   return (
     <div className="min-h-svh bg-bg text-white">
@@ -125,11 +128,17 @@ export default function LibraryPage() {
             )
           )}
 
-          {list.hasMore && (
-            <div className="mt-8">
-              <Button loading={list.loadingMore} onClick={list.loadMore}>Carregar mais</Button>
-            </div>
-          )}
+          {list.hasMore && <div ref={sentinel} aria-hidden="true" className="h-px" />}
+
+          <div className="mt-10 flex min-h-10 justify-center">
+            {list.loadingMore && <Loader2 className="animate-spin text-muted" aria-label="Carregando mais títulos" />}
+            {list.loadError && (
+              <div className="space-y-3 text-center">
+                <p className="text-muted">Não foi possível carregar mais.</p>
+                <Button onClick={list.loadMore}>Tentar de novo</Button>
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>

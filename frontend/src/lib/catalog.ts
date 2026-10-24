@@ -46,3 +46,13 @@ export function useTrending(): { items: CatalogItem[]; loading: boolean } {
   }, [])
   return { items, loading }
 }
+
+export type MediaDetails = CatalogItem & {
+  releaseDate?: string      
+  runtimeMinutes?: number
+  genres?: string[]
+  directors?: string[]
+  writers?: string[]
+  creators?: string[]
+  cast?: string[]
+}

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.corsini.corsabox.catalog.api.response.CatalogItemResponse;
+import com.corsini.corsabox.catalog.api.response.MediaDetailsResponse;
 import com.corsini.corsabox.catalog.application.service.BrowseCatalogUseCase;
 import com.corsini.corsabox.catalog.application.service.GetMediaDetailsUseCase;
 import com.corsini.corsabox.catalog.application.service.GetTrendingUseCase;
@@ -45,8 +46,8 @@ public class CatalogController {
     }
 
     @GetMapping("/{format}/{id}")
-    public CatalogItemResponse details(@PathVariable String format, @PathVariable int id) {
-        return CatalogItemResponse.from(getDetails.execute(MediaFormat.from(format), id));
+    public MediaDetailsResponse details(@PathVariable String format, @PathVariable int id) {
+        return MediaDetailsResponse.from(getDetails.execute(MediaFormat.from(format), id));
     }
 
     @GetMapping("/browse")
@@ -56,4 +57,5 @@ public class CatalogController {
         return browseCatalog.execute(BrowseCategory.from(category), BrowseSort.from(sort), page)
                 .stream().map(CatalogItemResponse::from).toList();
     }
+
 }

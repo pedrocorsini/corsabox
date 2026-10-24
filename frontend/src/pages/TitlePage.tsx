@@ -9,8 +9,8 @@ import { RatingMeter } from '../components/Rating'
 import { WatchedForm, type WatchedPayload } from '../components/WatchedForm'
 import { Button, ErrorBanner } from '../components/ui'
 import { api, ApiError, type LibraryEntry } from '../lib/api'
-import { KIND_LABEL, type CatalogItem, type MediaFormat } from '../lib/catalog' 
-import { formatDay, formatInstant } from '../lib/format'
+import { KIND_LABEL, type MediaDetails, type MediaFormat } from '../lib/catalog'
+import { formatDay, formatInstant, formatRuntime } from '../lib/format'
 
 function describe(e: unknown) {
   if (e instanceof ApiError) {
@@ -20,6 +20,39 @@ function describe(e: unknown) {
     if (e.status === 400) return 'Não foi possível salvar. Confira a nota e a data.'
   }
   return 'Não foi possível concluir. Tente novamente.'
+}
+
+function metaLine(item: MediaDetails) {
+  return [
+    KIND_LABEL[item.kind],
+    item.releaseDate ? formatDay(item.releaseDate) : null,
+    item.runtimeMinutes ? formatRuntime(item.runtimeMinutes, item.format === 'tv') : null,
+    item.genres?.join(', '),
+  ].filter(Boolean).join(' · ')
+} 
+
+function Credits({ item, className = '' }: { item: MediaDetails; className?: string }) {
+  const rows = [
+    { one: 'Diretor', many: 'Diretores', names: item.directors },
+    { one: 'Roteirista', many: 'Roteiristas', names: item.writers },
+    { one: 'Criador', many: 'Criadores', names: item.creators },
+    { one: 'Elenco principal', many: 'Elenco principal', names: item.cast },
+  ].filter((r) => r.names && r.names.length > 0)
+  if (rows.length === 0) return null
+  return (
+    <dl className={`space-y-5 text-[15px] ${className}`}>
+      {rows.map((r) => (
+        <div key={r.one}>
+          <dt className="text-muted">{r.names!.length > 1 ? r.many : r.one}</dt>
+          <dd>
+            <ul className="mt-1 space-y-0.5">
+              {r.names!.map((n) => <li key={n}>{n}</li>)}
+            </ul>
+          </dd>
+        </div>
+      ))}
+    </dl>
+  )
 }
 
 export default function TitlePage() {
@@ -35,7 +68,7 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
   const [params] = useSearchParams()
   const wantsForm = params.get('assistir') === '1'
 
-  const [item, setItem] = useState<CatalogItem | null>(null)
+  const [item, setItem] = useState<MediaDetails | null>(null)
   const [entry, setEntry] = useState<LibraryEntry | null>(null)
   const [failure, setFailure] = useState<'missing' | 'network' | null>(null)
   const [attempt, setAttempt] = useState(0)
@@ -151,13 +184,15 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
             <div className="mt-8 grid gap-8 md:grid-cols-12 md:gap-x-6">
               <div className="w-36 md:col-span-3 md:w-full">
                 <Poster item={item} />
+                <Credits item={item} className="mt-6 hidden md:block" />
               </div>
 
               <div className="md:col-span-8 md:col-start-5">
-                <p className="text-[15px] text-muted">
-                  {KIND_LABEL[item.kind]}{item.year ? ` · ${item.year}` : ''}
-                </p>
-                <h1 className="mt-1 text-4xl font-semibold md:text-5xl">{item.title}</h1>
+                <p className="text-[15px] text-muted">{metaLine(item)}</p>
+                <h1 className="mt-1 text-4xl font-semibold md:text-5xl">
+                  {item.title}
+                  {item.year && <span className="ml-3 font-normal text-muted">({item.year})</span>}
+                </h1>
                 
                 <p className="mt-6 max-w-[60ch] text-[1.0625rem] leading-[1.6] md:text-lg">
                   {item.overview ?? <span className="text-muted">Sem sinopse disponível.</span>}
@@ -172,7 +207,7 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
                 {!formOpen && (
                   <div className="mt-8 flex flex-wrap gap-3">
                     <Button variant="primary" onClick={() => setFormOpen(true)}>
-                      {watched ? 'Editar registro' : 'Assisti'}
+                      {watched ? 'Editar registro' : 'Marcar como Assistido'}
                     </Button>
                     {watched ? (
                       <Button onClick={() => setConfirmRemove(true)}>Remover dos assistidos</Button>
@@ -220,6 +255,7 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
                     </dl>
                   </section>
                 )}
+                <Credits item={item} className="mt-10 md:hidden" />
               </div>
             </div>
           </div>
