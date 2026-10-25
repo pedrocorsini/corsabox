@@ -87,8 +87,10 @@ async function request<T>(path: string, init: RequestInit = {}, token?: string |
 export const api = {
   login: (data: { email: string; password: string }) =>
     request<{ accessToken: string }>('/api/auth/login', { method: 'POST', body: JSON.stringify(data) }),
-  register: (data: RegisterData) =>
-    request<User>('/api/users', { method: 'POST', body: JSON.stringify(data) }),
+  startRegister: (data: RegisterData) =>
+    request<void>('/api/auth/register', { method: 'POST', body: JSON.stringify(data) }),
+  confirmRegister: (data: { email: string; code: string }) =>
+    request<User>('/api/auth/register/confirm', { method: 'POST', body: JSON.stringify(data) }),
   me: (token: string) => request<User>('/api/users/me', {}, token),
   updateMe: (token: string, data: UpdateProfileData) =>
     request<User>('/api/users/me', { method: 'PATCH', body: JSON.stringify(data) }, token),

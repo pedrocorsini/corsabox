@@ -4,9 +4,9 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { AuthLayout } from '../components/AuthLayout'
-import { ErrorBanner, Field, SubmitButton } from '../components/ui'
+import { ErrorBanner, Field, SubmitButton, SuccessBanner } from '../components/ui'
 import { useAuth } from '../auth/AuthContext'
-import { api, ApiError } from '../lib/api'
+import { api, ApiError, type RegisterData } from '../lib/api'
 
 const schema = z
   .object({
@@ -23,9 +23,74 @@ const schema = z
   })
 type Form = z.infer<typeof schema>
 
-export default function RegisterPage() {
+const codeSchema = z.object({ code: z.string().regex(/^\d{6}$/, 'Informe os 6 dígitos') })
+type CodeForm = z.infer<typeof codeSchema>
+
+function VerifyStep({ data, onBack }: { data: RegisterData; onBack: () => void }) {
   const { login } = useAuth()
   const navigate = useNavigate()
+  const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<CodeForm>({ resolver: zodResolver(codeSchema) })
+
+  const onSubmit = async ({ code }: CodeForm) => {
+    setError(null)
+    setInfo(null)
+    try {
+      await api.confirmRegister({ email: data.email, code })
+      await login(data.email, data.password)
+      navigate('/catalogo')
+    } catch (e) {
+      setError(
+        e instanceof ApiError && e.status === 400
+          ? 'Código inválido ou expirado.'
+          : e instanceof ApiError && e.status === 409
+            ? 'Este email ou username já está em uso.'
+            : 'Não foi possível confirmar. Tente novamente.',
+      )
+    }
+  }
+
+  const resend = async () => {
+    setError(null)
+    setInfo(null)
+    try {
+      await api.startRegister(data)
+      setInfo('Enviamos um novo código.')
+    } catch (e) {
+      setError(
+        e instanceof ApiError && e.status === 429
+          ? 'Muitas tentativas. Aguarde um pouco antes de pedir outro código.'
+          : 'Não foi possível reenviar. Tente novamente.',
+      )
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+      <Field id="code" label="Código de verificação" inputMode="numeric" maxLength={6}
+        autoComplete="one-time-code" error={errors.code?.message} {...register('code')} />
+      {info && <SuccessBanner>{info}</SuccessBanner>}
+      {error && <ErrorBanner>{error}</ErrorBanner>}
+      <SubmitButton loading={isSubmitting}>Confirmar e criar conta</SubmitButton>
+      <div className="flex justify-between text-sm">
+        <button type="button" onClick={onBack} className="text-muted transition-colors hover:text-white">
+          Corrigir dados
+        </button>
+        <button type="button" onClick={resend} className="font-medium text-accent hover:underline">
+          Reenviar código
+        </button>
+      </div>
+    </form>
+  )
+}
+
+export default function RegisterPage() {
+  const [pending, setPending] = useState<RegisterData | null>(null)
   const [serverError, setServerError] = useState<string | null>(null)
   const {
     register,
@@ -35,38 +100,43 @@ export default function RegisterPage() {
 
   const onSubmit = async (data: Form) => {
     setServerError(null)
+    const payload: RegisterData = {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      username: data.username.toLowerCase(),
+      email: data.email.trim().toLowerCase(),
+      password: data.password,
+    }
     try {
-      await api.register({
-        firstName: data.firstName,
-        lastName: data.lastName,
-        username: data.username.toLowerCase(),
-        email: data.email,
-        password: data.password,
-      })
-      await login(data.email, data.password)
-      navigate('/catalogo')
+      await api.startRegister(payload)
+      setPending(payload)
     } catch (e) {
       setServerError(
         e instanceof ApiError && e.status === 409
           ? 'Este email ou username já está em uso.'
-          : 'Não foi possível criar a conta. Tente novamente.',
+          : e instanceof ApiError && e.status === 429
+            ? 'Muitas tentativas. Aguarde um pouco e tente de novo.'
+            : 'Não foi possível criar a conta. Tente novamente.',
       )
     }
   }
 
+  const footer = (
+    <>
+      Já tem conta?{' '}
+      <Link to="/login" className="font-medium text-accent hover:underline">Entrar</Link>
+    </>
+  )
+
+  if (pending)
+    return (
+      <AuthLayout title="Confirme seu email" subtitle={`Enviamos um código de 6 dígitos para ${pending.email}.`} footer={footer}>
+        <VerifyStep data={pending} onBack={() => setPending(null)} />
+      </AuthLayout>
+    )
+
   return (
-    <AuthLayout
-      title="Crie sua conta"
-      subtitle="Comece a registrar o que você assiste."
-      footer={
-        <>
-          Já tem conta?{' '}
-          <Link to="/login" className="font-medium text-accent hover:underline">
-            Entrar
-          </Link>
-        </>
-      }
-    >
+    <AuthLayout title="Crie sua conta" subtitle="Comece a registrar o que você assiste." footer={footer}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div className="grid grid-cols-2 gap-3">
           <Field id="firstName" label="Nome" autoComplete="given-name"
@@ -83,7 +153,7 @@ export default function RegisterPage() {
         <Field id="confirmPassword" label="Confirmar senha" type="password" autoComplete="new-password"
           error={errors.confirmPassword?.message} {...register('confirmPassword')} />
         {serverError && <ErrorBanner>{serverError}</ErrorBanner>}
-        <SubmitButton loading={isSubmitting}>Criar conta</SubmitButton>
+        <SubmitButton loading={isSubmitting}>Enviar código</SubmitButton>
       </form>
     </AuthLayout>
   )

@@ -12,8 +12,10 @@ import org.springframework.core.annotation.Order;
 import com.corsini.corsabox.identity.domain.exception.EmailAlreadyInUseException;
 import com.corsini.corsabox.identity.domain.exception.InvalidCredentialsException;
 import com.corsini.corsabox.identity.domain.exception.InvalidResetTokenException;
+import com.corsini.corsabox.identity.domain.exception.InvalidVerificationCodeException;
 import com.corsini.corsabox.identity.domain.exception.UserNotFoundException;
 import com.corsini.corsabox.identity.domain.exception.UsernameAlreadyInUseException;
+import com.corsini.corsabox.identity.domain.exception.VerificationCodeRecentlySentException;
 import com.corsini.corsabox.identity.domain.exception.WrongCurrentPasswordException;
 
 @Order(Ordered.LOWEST_PRECEDENCE)
@@ -38,7 +40,8 @@ public class UserExceptionHandler extends ResponseEntityExceptionHandler {
 
     // Token de reset vencido, já usado ou substituído, e senha atual errada na troca de senha.
     // 400 de propósito: 401 fica reservado para sessão expirada.
-    @ExceptionHandler({InvalidResetTokenException.class, WrongCurrentPasswordException.class})
+    @ExceptionHandler({InvalidResetTokenException.class, WrongCurrentPasswordException.class,
+                   InvalidVerificationCodeException.class})
     ProblemDetail handleBadRequest(RuntimeException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
@@ -51,5 +54,10 @@ public class UserExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(UserNotFoundException.class)
     ProblemDetail handleNotFound(UserNotFoundException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(VerificationCodeRecentlySentException.class)
+    ProblemDetail handleTooMany(VerificationCodeRecentlySentException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
     }
 }
