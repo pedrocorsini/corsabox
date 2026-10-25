@@ -144,11 +144,13 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
     }
     setEntry(saved)
     setFormOpen(false)
+    setEpoch((n) => n + 1)
   })
 
   const removeWatched = () => act('remove', async (t) => {
     await api.library.removeWatched(t, format, tmdbId)
     setEntry(null)
+    setEpoch((n) => n + 1)
     setConfirmRemove(false)
   })
 
