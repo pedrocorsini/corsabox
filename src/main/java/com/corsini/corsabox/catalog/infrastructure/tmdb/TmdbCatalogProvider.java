@@ -145,10 +145,11 @@ public class TmdbCatalogProvider implements CatalogProvider {
     public MediaDetails details(MediaFormat format, int id) {
         try {
             var movie = format == MediaFormat.MOVIE;
-            var append = movie ? "credits,release_dates" : "credits";
+            var append = movie ? "credits,release_dates,videos" : "credits,videos";
             var d = http.get()
                     .uri(u -> u.path("/{type}/{id}")
                             .queryParam("language", language)
+                            .queryParam("include_video_language", "pt,en,null")
                             .queryParam("append_to_response", append)
                             .build(format.path(), id))
                     .retrieve()
@@ -194,7 +195,7 @@ public class TmdbCatalogProvider implements CatalogProvider {
             LocalDate released = movie ? brazilRelease(d.releaseDates()) : null;
             if (released == null) released = parseDate(movie ? d.releaseDate() : d.firstAirDate());
 
-            return new MediaDetails(item, released, runtime, genres, directors, writers, creators, castNames);
+            return new MediaDetails(item, released, runtime, genres, directors, writers, creators, castNames, trailerKey(d.videos()));
         } catch (HttpClientErrorException.NotFound e) {
             throw new CatalogItemNotFoundException(format, id);
         } catch (RestClientException e) {
@@ -220,6 +221,20 @@ public class TmdbCatalogProvider implements CatalogProvider {
 
     // Apoio
 
+    private static String trailerKey(TmdbVideos videos) {
+        if (videos == null || videos.results() == null) return null;
+        return videos.results().stream()
+                .filter(v -> "YouTube".equals(v.site())
+                        && ("Trailer".equals(v.type()) || "Teaser".equals(v.type()))
+                        && v.key() != null && !v.key().isBlank())
+                .min(Comparator
+                        .comparingInt((TmdbVideo v) -> "Trailer".equals(v.type()) ? 0 : 1)
+                        .thenComparingInt(v -> "pt".equals(v.language()) ? 0 : 1)
+                        .thenComparingInt(v -> Boolean.TRUE.equals(v.official()) ? 0 : 1))
+                .map(TmdbVideo::key)
+                .orElse(null);
+    }
+    
     private List<TmdbResult> fetchResults(Function<UriBuilder, URI> uri) {
         try {
             var body = http.get().uri(uri).retrieve().body(TmdbPage.class);
@@ -360,5 +375,13 @@ public class TmdbCatalogProvider implements CatalogProvider {
             @JsonProperty("episode_run_time") List<Integer> episodeRunTime,
             @JsonProperty("created_by") List<TmdbPerson> createdBy,
             TmdbCredits credits,
-            @JsonProperty("release_dates") TmdbReleaseDates releaseDates) {}
+            @JsonProperty("release_dates") TmdbReleaseDates releaseDates,
+            TmdbVideos videos) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record TmdbVideo(String key, String site, String type, Boolean official,
+                    @JsonProperty("iso_639_1") String language) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record TmdbVideos(List<TmdbVideo> results) {}
 }

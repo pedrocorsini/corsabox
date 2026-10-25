@@ -72,8 +72,11 @@ dialog.sheet {
   background: var(--color-surface); color: var(--color-paper);
   opacity: 0; transform: translateY(6px) scale(.97);
   transition: opacity .14s var(--ease-out), transform .14s var(--ease-out),
-    overlay .14s allow-discrete, display .14s allow-discrete;
+  overlay .14s allow-discrete, display .14s allow-discrete;
 }
+
+dialog.sheet.sheet-video { width: min(60rem, calc(100vw - 2rem)); }
+
 dialog.sheet[open] { opacity: 1; transform: none; transition-duration: .2s; }
 @starting-style { dialog.sheet[open] { opacity: 0; transform: translateY(6px) scale(.97); } }
 

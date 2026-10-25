@@ -24,6 +24,7 @@ export type MediaDetails = CatalogItem & {
   writers?: string[]
   creators?: string[]
   cast?: string[]
+  trailerKey?: string
 }
 
 export const PERIODS = [

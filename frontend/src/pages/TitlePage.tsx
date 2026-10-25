@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Play } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
 import { AppHeader } from '../components/AppHeader'
 import { ConfirmDialog } from '../components/ConfirmDialog'
@@ -11,6 +11,7 @@ import { Button, ErrorBanner } from '../components/ui'
 import { api, ApiError, type LibraryEntry } from '../lib/api'
 import { metaLine, type MediaDetails, type MediaFormat } from '../lib/catalog'
 import { formatDay, formatInstant } from '../lib/format'
+import { TrailerDialog } from '../components/TrailerDialog'
 
 function describe(e: unknown) {
   if (e instanceof ApiError) {
@@ -58,13 +59,13 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
   const { token } = useAuth()
   const [params] = useSearchParams()
   const wantsForm = params.get('assistir') === '1'
-
   const [item, setItem] = useState<MediaDetails | null>(null)
   const [entry, setEntry] = useState<LibraryEntry | null>(null)
   const [failure, setFailure] = useState<'missing' | 'network' | null>(null)
   const [attempt, setAttempt] = useState(0)
   const [formOpen, setFormOpen] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
+  const [trailerOpen, setTrailerOpen] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -189,6 +190,12 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
                   {item.overview ?? <span className="text-muted">Sem sinopse disponível.</span>}
                 </p>
 
+                {item.trailerKey && (
+                  <Button className="mt-5" onClick={() => setTrailerOpen(true)}>
+                    <Play size={16} aria-hidden="true" /> Assistir trailer
+                  </Button>
+                )}
+
                 {entry?.status === 'watchlist' && (
                   <p className="mt-3 text-muted">Na sua lista de quero ver desde {formatInstant(entry.addedAt)}.</p>
                 )}
@@ -262,6 +269,14 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
         onConfirm={removeWatched}
         onCancel={() => setConfirmRemove(false)}
       />
+      {item?.trailerKey && (
+      <TrailerDialog
+        open={trailerOpen}
+        title={item.title}
+        videoKey={item.trailerKey}
+        onClose={() => setTrailerOpen(false)}
+      />
+      )}
     </div>
   )
 }
