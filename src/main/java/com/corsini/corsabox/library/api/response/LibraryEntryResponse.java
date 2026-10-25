@@ -21,7 +21,7 @@ public record LibraryEntryResponse(UUID id, MediaDetailsResponse media, String s
                 m.kind().name().toLowerCase(Locale.ROOT), m.format().path(), m.year(),
                 null, m.posterUrl(), m.backdropUrl(),
                 m.releaseDate(), m.runtimeMinutes(), m.genres(),
-                List.of(), List.of(), List.of(), List.of(), null);
+                List.of(), List.of(), List.of(), List.of(), null, List.of());
         return new LibraryEntryResponse(
             e.getId(),
             media,

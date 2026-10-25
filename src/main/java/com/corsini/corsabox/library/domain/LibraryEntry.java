@@ -71,7 +71,19 @@ public class LibraryEntry {
         this.review = text;
         this.updatedAt = Instant.now();
     }
+
     public void refreshMedia(MediaSnapshot media) {
         this.media = media;
+    }
+
+    public static LibraryEntry watching(UserId userId, MediaSnapshot media) {
+    var entry = addToWatchlist(userId, media);
+    entry.startWatching();
+    return entry;
+}
+
+    public void startWatching() {
+        this.status = EntryStatus.WATCHING;
+        this.updatedAt = Instant.now();
     }
 }

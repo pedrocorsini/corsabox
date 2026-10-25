@@ -32,9 +32,12 @@ import com.corsini.corsabox.catalog.application.port.CatalogProvider;
 import com.corsini.corsabox.catalog.domain.BrowseCategory;
 import com.corsini.corsabox.catalog.domain.BrowseSort;
 import com.corsini.corsabox.catalog.domain.CatalogItem;
+import com.corsini.corsabox.catalog.domain.EpisodeItem;
 import com.corsini.corsabox.catalog.domain.MediaDetails;
 import com.corsini.corsabox.catalog.domain.MediaFormat;
 import com.corsini.corsabox.catalog.domain.MediaKind;
+import com.corsini.corsabox.catalog.domain.SeasonDetails;
+import com.corsini.corsabox.catalog.domain.SeasonSummary;
 import com.corsini.corsabox.catalog.domain.TrendingWindow;
 import com.corsini.corsabox.catalog.domain.exception.CatalogItemNotFoundException;
 import com.corsini.corsabox.catalog.domain.exception.CatalogUnavailableException;
@@ -194,8 +197,14 @@ public class TmdbCatalogProvider implements CatalogProvider {
             // Filme: estreia no Brasil. Sem ela, vale a data original. Série: data de estreia.
             LocalDate released = movie ? brazilRelease(d.releaseDates()) : null;
             if (released == null) released = parseDate(movie ? d.releaseDate() : d.firstAirDate());
-
-            return new MediaDetails(item, released, runtime, genres, directors, writers, creators, castNames, trailerKey(d.videos()));
+            var seasons = movie || d.seasons() == null
+                ? List.<SeasonSummary>of()
+                : d.seasons().stream()
+                    .filter(s -> s.episodeCount() > 0)
+                    .sorted(Comparator.comparingInt(TmdbSeasonStub::number))
+                    .map(s -> new SeasonSummary(s.number(), text(s.name()), s.episodeCount(), parseDate(s.airDate())))
+                    .toList();
+            return new MediaDetails(item, released, runtime, genres, directors, writers, creators, castNames, trailerKey(d.videos()), seasons);
         } catch (HttpClientErrorException.NotFound e) {
             throw new CatalogItemNotFoundException(format, id);
         } catch (RestClientException e) {
@@ -220,6 +229,31 @@ public class TmdbCatalogProvider implements CatalogProvider {
     }
 
     // Apoio
+
+    @Override
+    @Cacheable(cacheNames = "tmdb-season", key = "#tvId + ':' + #season")
+    public SeasonDetails season(int tvId, int season) {
+        try {
+            var s = http.get()
+                    .uri(u -> u.path("/tv/{id}/season/{n}")
+                            .queryParam("language", language)
+                            .build(tvId, season))
+                    .retrieve()
+                    .body(TmdbSeasonDetail.class);
+            if (s == null) throw new CatalogItemNotFoundException(MediaFormat.TV, tvId);
+            var episodes = s.episodes() == null ? List.<EpisodeItem>of()
+                    : s.episodes().stream()
+                        .map(e -> new EpisodeItem(e.number(), text(e.name()), text(e.overview()),
+                                parseDate(e.airDate()), positive(e.runtime()), image(e.stillPath(), "w300")))
+                        .toList();
+            return new SeasonDetails(s.number(), text(s.name()), episodes);
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new CatalogItemNotFoundException(MediaFormat.TV, tvId);
+        } catch (RestClientException e) {
+            log.error("Falha ao consultar a TMDB", e);
+            throw new CatalogUnavailableException(e);
+        }
+    }
 
     private static String trailerKey(TmdbVideos videos) {
         if (videos == null || videos.results() == null) return null;
@@ -376,6 +410,7 @@ public class TmdbCatalogProvider implements CatalogProvider {
             @JsonProperty("created_by") List<TmdbPerson> createdBy,
             TmdbCredits credits,
             @JsonProperty("release_dates") TmdbReleaseDates releaseDates,
+            List<TmdbSeasonStub> seasons,
             TmdbVideos videos) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -384,4 +419,18 @@ public class TmdbCatalogProvider implements CatalogProvider {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     record TmdbVideos(List<TmdbVideo> results) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record TmdbSeasonStub(@JsonProperty("season_number") int number, String name,
+                        @JsonProperty("episode_count") int episodeCount,
+                        @JsonProperty("air_date") String airDate) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record TmdbEpisode(@JsonProperty("episode_number") int number, String name, String overview,
+                    @JsonProperty("air_date") String airDate, Integer runtime,
+                    @JsonProperty("still_path") String stillPath) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record TmdbSeasonDetail(@JsonProperty("season_number") int number, String name,
+                            List<TmdbEpisode> episodes) {}
 }

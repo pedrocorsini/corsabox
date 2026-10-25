@@ -28,7 +28,7 @@ public class ListEntriesUseCase {
 
     public Page<LibraryEntry> execute(UUID userId, EntryStatus status, Pageable pageable) {
         var page = repository.findByStatus(new UserId(userId), status, pageable);
-        return status == EntryStatus.WATCHED ? page.map(this::withMetadata) : page;
+        return status != EntryStatus.WATCHLIST ? page.map(this::withMetadata) : page;
     }
 
     private LibraryEntry withMetadata(LibraryEntry entry) {

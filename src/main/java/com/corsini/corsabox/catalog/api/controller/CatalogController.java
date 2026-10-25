@@ -10,8 +10,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.corsini.corsabox.catalog.api.response.CatalogItemResponse;
 import com.corsini.corsabox.catalog.api.response.MediaDetailsResponse;
+import com.corsini.corsabox.catalog.api.response.SeasonResponse;
 import com.corsini.corsabox.catalog.application.service.BrowseCatalogUseCase;
 import com.corsini.corsabox.catalog.application.service.GetMediaDetailsUseCase;
+import com.corsini.corsabox.catalog.application.service.GetSeasonUseCase;
 import com.corsini.corsabox.catalog.application.service.GetTrendingUseCase;
 import com.corsini.corsabox.catalog.application.service.SearchCatalogUseCase;
 import com.corsini.corsabox.catalog.domain.BrowseCategory;
@@ -26,13 +28,15 @@ public class CatalogController {
     private final SearchCatalogUseCase searchCatalog;
     private final GetMediaDetailsUseCase getDetails;
     private final BrowseCatalogUseCase browseCatalog;
+    private final GetSeasonUseCase getSeason;
 
     public CatalogController(GetTrendingUseCase getTrending, SearchCatalogUseCase searchCatalog,
-                             GetMediaDetailsUseCase getDetails, BrowseCatalogUseCase browseCatalog) {
+                             GetMediaDetailsUseCase getDetails, BrowseCatalogUseCase browseCatalog, GetSeasonUseCase getSeason) {
         this.getTrending = getTrending;
         this.searchCatalog = searchCatalog;
         this.getDetails = getDetails;
         this.browseCatalog = browseCatalog;
+        this.getSeason = getSeason;
     }
 
     @GetMapping("/trending")
@@ -57,6 +61,11 @@ public class CatalogController {
                                             @RequestParam(defaultValue = "1") int page) {
         return browseCatalog.execute(BrowseCategory.from(category), BrowseSort.from(sort), page)
                 .stream().map(CatalogItemResponse::from).toList();
+    }
+
+    @GetMapping("/tv/{id}/seasons/{season}")
+    public SeasonResponse season(@PathVariable int id, @PathVariable int season) {
+        return SeasonResponse.from(getSeason.execute(id, season));
     }
 
 }

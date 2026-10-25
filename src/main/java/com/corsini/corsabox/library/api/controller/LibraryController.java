@@ -1,5 +1,6 @@
 package com.corsini.corsabox.library.api.controller;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -19,13 +20,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.corsini.corsabox.catalog.domain.MediaFormat;
 import com.corsini.corsabox.library.api.request.WatchedRequest;
+import com.corsini.corsabox.library.api.response.EpisodeLogResponse;
 import com.corsini.corsabox.library.api.response.LibraryEntryResponse;
+import com.corsini.corsabox.library.application.dto.LogEpisodeCommand;
 import com.corsini.corsabox.library.application.dto.MarkWatchedCommand;
 import com.corsini.corsabox.library.application.service.AddToWatchlistUseCase;
 import com.corsini.corsabox.library.application.service.GetEntryUseCase;
 import com.corsini.corsabox.library.application.service.ListEntriesUseCase;
 import com.corsini.corsabox.library.application.service.MarkAsWatchedUseCase;
 import com.corsini.corsabox.library.application.service.RemoveEntryUseCase;
+import com.corsini.corsabox.library.application.service.TrackEpisodesUseCase;
 import com.corsini.corsabox.library.domain.EntryStatus;
 
 import jakarta.validation.Valid;
@@ -38,15 +42,17 @@ public class LibraryController {
     private final RemoveEntryUseCase removeEntry;
     private final ListEntriesUseCase listEntries;
     private final GetEntryUseCase getEntry;
+    private final TrackEpisodesUseCase track;
 
     public LibraryController(AddToWatchlistUseCase addToWatchlist, MarkAsWatchedUseCase markAsWatched,
                              RemoveEntryUseCase removeEntry, ListEntriesUseCase listEntries,
-                             GetEntryUseCase getEntry) {
+                             GetEntryUseCase getEntry, TrackEpisodesUseCase track) {
         this.addToWatchlist = addToWatchlist;
         this.markAsWatched = markAsWatched;
         this.removeEntry = removeEntry;
         this.listEntries = listEntries;
         this.getEntry = getEntry;
+        this.track = track;
     }
 
     private static UUID userId(Jwt jwt) {
@@ -110,5 +116,48 @@ public class LibraryController {
     public LibraryEntryResponse entry(@AuthenticationPrincipal Jwt jwt,
             @PathVariable String format, @PathVariable int tmdbId) {
         return LibraryEntryResponse.from(getEntry.execute(userId(jwt), MediaFormat.from(format), tmdbId));
+    }
+
+    // Assistindo
+
+    @GetMapping("/watching")
+    public Page<LibraryEntryResponse> watching(@AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        return list(jwt, EntryStatus.WATCHING, page, size);
+    }
+
+    @DeleteMapping("/watching/tv/{tmdbId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeFromWatching(@AuthenticationPrincipal Jwt jwt, @PathVariable int tmdbId) {
+        removeEntry.execute(userId(jwt), MediaFormat.TV, tmdbId, EntryStatus.WATCHING);
+    }
+
+    // Episódios
+
+    @GetMapping("/progress/tv/{tmdbId}")
+    public List<EpisodeLogResponse> progress(@AuthenticationPrincipal Jwt jwt, @PathVariable int tmdbId) {
+        return track.progress(userId(jwt), tmdbId).stream().map(EpisodeLogResponse::from).toList();
+    }
+
+    @PutMapping("/progress/tv/{tmdbId}/seasons/{season}/episodes/{episode}")
+    public EpisodeLogResponse logEpisode(@AuthenticationPrincipal Jwt jwt, @PathVariable int tmdbId,
+            @PathVariable int season, @PathVariable int episode, @Valid @RequestBody WatchedRequest r) {
+        var command = new LogEpisodeCommand(userId(jwt), tmdbId, season, episode,
+                r.rating(), r.watchedOn(), r.review());
+        return EpisodeLogResponse.from(track.log(command));
+    }
+
+    @DeleteMapping("/progress/tv/{tmdbId}/seasons/{season}/episodes/{episode}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeEpisode(@AuthenticationPrincipal Jwt jwt, @PathVariable int tmdbId,
+            @PathVariable int season, @PathVariable int episode) {
+        track.remove(userId(jwt), tmdbId, season, episode);
+    }
+
+    @PutMapping("/progress/tv/{tmdbId}/seasons/{season}")
+    public List<EpisodeLogResponse> markSeason(@AuthenticationPrincipal Jwt jwt, @PathVariable int tmdbId,
+            @PathVariable int season, @RequestParam(required = false) Integer until) {
+        return track.markSeason(userId(jwt), tmdbId, season, until).stream()
+                .map(EpisodeLogResponse::from).toList();
     }
 }

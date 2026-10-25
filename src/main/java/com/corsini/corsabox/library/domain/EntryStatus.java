@@ -1,3 +1,3 @@
 package com.corsini.corsabox.library.domain;
 
-public enum EntryStatus { WATCHLIST, WATCHED }
+public enum EntryStatus { WATCHLIST, WATCHING, WATCHED }
