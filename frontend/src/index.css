@@ -92,3 +92,10 @@ html:has(dialog[open]) { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   dialog.sheet, dialog.sheet[open] { transform: none; }
 }
+
+/* Barra de rolagem horizontal fina, no tom do site */
+.scroll-thin { scrollbar-width: thin; scrollbar-color: var(--color-ash) var(--color-line); }
+/* Fallback para navegadores sem scrollbar-color */
+.scroll-thin::-webkit-scrollbar { height: 6px; }
+.scroll-thin::-webkit-scrollbar-track { background: var(--color-line); }
+.scroll-thin::-webkit-scrollbar-thumb { background: var(--color-ash); }

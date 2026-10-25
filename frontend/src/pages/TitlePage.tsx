@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router'
 import { ArrowLeft, Play } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
@@ -6,12 +6,13 @@ import { AppHeader } from '../components/AppHeader'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { Poster } from '../components/Poster'
 import { RatingMeter } from '../components/Rating'
+import { SeasonsSection } from '../components/SeasonsSection'
+import { TrailerDialog } from '../components/TrailerDialog'
 import { WatchedForm, type WatchedPayload } from '../components/WatchedForm'
 import { Button, ErrorBanner } from '../components/ui'
 import { api, ApiError, type LibraryEntry } from '../lib/api'
 import { metaLine, type MediaDetails, type MediaFormat } from '../lib/catalog'
 import { formatDay, formatInstant } from '../lib/format'
-import { TrailerDialog } from '../components/TrailerDialog'
 
 function describe(e: unknown) {
   if (e instanceof ApiError) {
@@ -65,7 +66,9 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
   const [attempt, setAttempt] = useState(0)
   const [formOpen, setFormOpen] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
+  const [confirmStop, setConfirmStop] = useState(false)
   const [trailerOpen, setTrailerOpen] = useState(false)
+  const [epoch, setEpoch] = useState(0)
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -109,11 +112,25 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
     }
   }
 
+  // O primeiro episódio marcado promove o título para "assistindo" no servidor.
+  // Aqui só recarregamos o registro quando ele ainda não estava nesse estado.
+  const syncEntry = useCallback(() => {
+    if (!token || entry?.status === 'watching' || entry?.status === 'watched') return
+    api.library.entry(token, format, tmdbId).then(setEntry).catch(() => {})
+  }, [token, format, tmdbId, entry?.status])
+
   const addToList = () => act('list', async (t) => setEntry(await api.library.addToWatchlist(t, format, tmdbId)))
 
   const removeFromList = () => act('unlist', async (t) => {
     await api.library.removeFromWatchlist(t, format, tmdbId)
     setEntry(null)
+  })
+
+  const stopWatching = () => act('stop', async (t) => {
+    await api.library.removeWatching(t, tmdbId)
+    setEntry(null)
+    setEpoch((n) => n + 1) // remonta as temporadas, que já não têm episódios marcados
+    setConfirmStop(false)
   })
 
   const save = (data: WatchedPayload) => act('save', async (t) => {
@@ -136,6 +153,7 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
   })
 
   const watched = entry?.status === 'watched'
+  const watching = entry?.status === 'watching'
 
   return (
     <div className="min-h-svh bg-bg text-white">
@@ -185,7 +203,7 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
                   {item.title}
                   {item.year && <span className="ml-3 font-normal text-muted">({item.year})</span>}
                 </h1>
-                
+
                 <p className="mt-6 max-w-[60ch] text-[1.0625rem] leading-[1.6] md:text-lg">
                   {item.overview ?? <span className="text-muted">Sem sinopse disponível.</span>}
                 </p>
@@ -209,6 +227,8 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
                     </Button>
                     {watched ? (
                       <Button onClick={() => setConfirmRemove(true)}>Remover dos assistidos</Button>
+                    ) : watching ? (
+                      <Button onClick={() => setConfirmStop(true)}>Parar de acompanhar</Button>
                     ) : entry ? (
                       <Button loading={busy === 'unlist'} onClick={removeFromList}>Tirar da lista</Button>
                     ) : (
@@ -253,6 +273,11 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
                     </dl>
                   </section>
                 )}
+
+                {format === 'tv' && item.seasons && item.seasons.length > 0 && (
+                  <SeasonsSection key={epoch} tmdbId={tmdbId} seasons={item.seasons} onChange={syncEntry} />
+                )}
+
                 <Credits item={item} className="mt-10 md:hidden" />
               </div>
             </div>
@@ -269,13 +294,24 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
         onConfirm={removeWatched}
         onCancel={() => setConfirmRemove(false)}
       />
-      {item?.trailerKey && (
-      <TrailerDialog
-        open={trailerOpen}
-        title={item.title}
-        videoKey={item.trailerKey}
-        onClose={() => setTrailerOpen(false)}
+
+      <ConfirmDialog
+        open={confirmStop}
+        title="Parar de acompanhar?"
+        description="Os episódios marcados, com nota, data e review, serão apagados."
+        confirmLabel="Parar"
+        busy={busy === 'stop'}
+        onConfirm={stopWatching}
+        onCancel={() => setConfirmStop(false)}
       />
+
+      {item?.trailerKey && (
+        <TrailerDialog
+          open={trailerOpen}
+          title={item.title}
+          videoKey={item.trailerKey}
+          onClose={() => setTrailerOpen(false)}
+        />
       )}
     </div>
   )

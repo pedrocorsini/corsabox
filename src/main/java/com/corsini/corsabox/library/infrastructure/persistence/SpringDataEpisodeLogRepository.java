@@ -1,5 +1,6 @@
 package com.corsini.corsabox.library.infrastructure.persistence;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -12,10 +13,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 public interface SpringDataEpisodeLogRepository extends JpaRepository<EpisodeLogEntity, UUID> {
     Optional<EpisodeLogEntity> findByEntryIdAndSeasonNumberAndEpisodeNumber(UUID entryId, int season, int episode);
+
     List<EpisodeLogEntity> findByEntryIdOrderBySeasonNumberAscEpisodeNumberAsc(UUID entryId);
 
     @Transactional
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("delete from EpisodeLogEntity e where e.entryId = :entryId")
     int deleteByEntryId(@Param("entryId") UUID entryId);
+
+    @Query(value = """
+            select distinct on (entry_id) entry_id, season_number, episode_number
+            from episode_logs
+            where entry_id in (:ids)
+            order by entry_id, (season_number > 0) desc, season_number desc, episode_number desc
+            """, nativeQuery = true)
+    List<Object[]> findLatestByEntryIds(@Param("ids") Collection<UUID> ids);
 }

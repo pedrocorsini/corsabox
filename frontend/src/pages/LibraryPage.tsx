@@ -1,4 +1,5 @@
 import { Link, useSearchParams } from 'react-router'
+import { Loader2 } from 'lucide-react'
 import { AppHeader } from '../components/AppHeader'
 import { Poster } from '../components/Poster'
 import { RatingMeter } from '../components/Rating'
@@ -9,13 +10,18 @@ import { formatDay } from '../lib/format'
 import { useLibraryList } from '../lib/library'
 import { useScrollEffects } from '../lib/motion'
 import { useInfiniteScroll } from '../lib/useInfiniteScroll'
-import { Loader2 } from 'lucide-react'
-
 
 const TABS: { status: LibraryStatus; param: string; label: string }[] = [
   { status: 'watched', param: 'assistidos', label: 'Assistidos' },
+  { status: 'watching', param: 'assistindo', label: 'Assistindo' },
   { status: 'watchlist', param: 'quero-ver', label: 'Quero ver' },
 ]
+
+const EMPTY: Record<LibraryStatus, readonly [string, string]> = {
+  watched: ['Nada registrado ainda.', 'Marque um título como assistido e ele aparece aqui, com nota, data e review.'],
+  watching: ['Nada em andamento.', 'Marque um episódio na página de uma série ou anime e ele aparece aqui.'],
+  watchlist: ['Sua fila está vazia.', 'Guarde o que você quer ver e passe para os assistidos quando terminar.'],
+}
 
 const stagger = (i: number) => ({ animationDelay: `${Math.min(i, 8) * 40}ms` })
 
@@ -42,6 +48,26 @@ function WatchedRow({ entry, index }: { entry: LibraryEntry; index: number }) {
   )
 }
 
+function WatchingCard({ entry, index }: { entry: LibraryEntry; index: number }) {
+  const m = entry.media
+  return (
+    <li className="fade-in" style={stagger(index)}>
+      <Link to={titlePath(m)} className="block transition active:scale-[0.97]">
+        <Poster item={m} />
+        <p className="mt-2 truncate text-[15px]">{m.title}</p>
+        <p className="text-sm text-muted">
+          {entry.progress
+            ? `T${entry.progress.season} E${entry.progress.episode}`
+            : `${KIND_LABEL[m.kind]}${m.year ? ` · ${m.year}` : ''}`}
+        </p>
+      </Link>
+      <Link to={titlePath(m)} className="mt-1 inline-block text-sm font-medium text-accent hover:underline">
+        Continuar
+      </Link>
+    </li>
+  )
+}
+
 function WatchlistCard({ entry, index }: { entry: LibraryEntry; index: number }) {
   const m = entry.media
   return (
@@ -63,9 +89,11 @@ export default function LibraryPage() {
   const [params, setParams] = useSearchParams()
   const active = TABS.find((t) => t.param === params.get('aba')) ?? TABS[0]
   const watched = useLibraryList('watched')
+  const watching = useLibraryList('watching')
   const watchlist = useLibraryList('watchlist')
-  const lists = { watched, watchlist }
+  const lists = { watched, watching, watchlist }
   const list = lists[active.status]
+  const [emptyTitle, emptyText] = EMPTY[active.status]
   const sentinel = useInfiniteScroll(!list.loading && list.hasMore && !list.loadError, list.loadMore)
 
   return (
@@ -74,14 +102,14 @@ export default function LibraryPage() {
       <main className="mx-auto max-w-6xl px-5 pb-24 pt-12 md:px-8">
         <h1 data-reveal className="text-4xl font-semibold md:text-5xl">Biblioteca</h1>
 
-        <div role="tablist" aria-label="Listas" className="mt-8 flex gap-8">
+        <div role="tablist" aria-label="Listas" className="mt-8 flex gap-8 overflow-x-auto">
           {TABS.map((t) => {
             const total = lists[t.status].total
             const on = t.status === active.status
             return (
               <button key={t.status} role="tab" aria-selected={on}
                 onClick={() => setParams({ aba: t.param }, { replace: true })}
-                className={`border-b-2 pb-2 text-lg transition-colors ${on ? 'border-accent text-white' : 'border-transparent text-muted hover:text-white'}`}>
+                className={`shrink-0 border-b-2 pb-2 text-lg transition-colors ${on ? 'border-accent text-white' : 'border-transparent text-muted hover:text-white'}`}>
                 {t.label}
                 {total !== null && <span className="ml-2 text-[15px] tabular-nums text-muted">{total}</span>}
               </button>
@@ -105,14 +133,8 @@ export default function LibraryPage() {
 
           {!list.loading && !list.error && list.items.length === 0 && (
             <div className="max-w-md space-y-3">
-              <p className="text-xl font-semibold">
-                {active.status === 'watched' ? 'Nada registrado ainda.' : 'Sua fila está vazia.'}
-              </p>
-              <p className="text-muted">
-                {active.status === 'watched'
-                  ? 'Marque um título como assistido e ele aparece aqui, com nota, data e review.'
-                  : 'Guarde o que você quer ver e passe para os assistidos quando terminar.'}
-              </p>
+              <p className="text-xl font-semibold">{emptyTitle}</p>
+              <p className="text-muted">{emptyText}</p>
               <Link to="/catalogo" className="inline-block font-medium text-accent hover:underline">Buscar no catálogo</Link>
             </div>
           )}
@@ -124,7 +146,10 @@ export default function LibraryPage() {
               </ul>
             ) : (
               <ul className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-                {list.items.map((e, i) => <WatchlistCard key={e.id} entry={e} index={i} />)}
+                {list.items.map((e, i) =>
+                  active.status === 'watching'
+                    ? <WatchingCard key={e.id} entry={e} index={i} />
+                    : <WatchlistCard key={e.id} entry={e} index={i} />)}
               </ul>
             )
           )}

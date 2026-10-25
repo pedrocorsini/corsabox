@@ -25,6 +25,7 @@ export type MediaDetails = CatalogItem & {
   creators?: string[]
   cast?: string[]
   trailerKey?: string
+  seasons?: SeasonSummary[]
 }
 
 export const PERIODS = [
@@ -78,3 +79,16 @@ export function useTrending(period: TrendingWindow) {
     pending: result !== null && result.period !== period,
   }
 }
+
+export type SeasonSummary = { number: number; name?: string | null; episodeCount: number; airDate?: string | null }
+
+export type Episode = {
+  number: number
+  name?: string | null
+  overview?: string | null
+  airDate?: string | null
+  runtimeMinutes?: number | null
+  stillUrl?: string | null
+}
+
+export type SeasonDetails = { number: number; name?: string | null; episodes: Episode[] }

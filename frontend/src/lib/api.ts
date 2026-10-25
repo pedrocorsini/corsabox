@@ -1,18 +1,19 @@
-import type { CatalogItem, MediaDetails, MediaFormat, TrendingWindow } from './catalog'
+import type { CatalogItem, MediaDetails, MediaFormat, SeasonDetails, TrendingWindow } from './catalog'
 
 export type BrowseCategory = 'movies' | 'tv' | 'anime'
 export type BrowseSort = 'popularity' | 'title'
-export type LibraryStatus = 'watchlist' | 'watched'
+export type LibraryStatus = 'watchlist' | 'watching' | 'watched'
 
 export type LibraryEntry = {
   id: string
   media: MediaDetails
   status: LibraryStatus
-  rating?: number        
-  watchedOn?: string     
+  rating?: number
+  watchedOn?: string
   review?: string
   addedAt: string
   updatedAt: string
+  progress?: { season: number; episode: number }
 }
 
 export type User = {
@@ -30,6 +31,15 @@ export type RegisterData = {
   username: string
   email: string
   password: string
+}
+
+export type EpisodeLog = {
+  season: number
+  episode: number
+  rating?: number
+  watchedOn?: string
+  review?: string
+  updatedAt: string
 }
 
 export type WatchedData = { rating: number | null; watchedOn: string | null; review: string | null }
@@ -102,6 +112,7 @@ export const api = {
     request<void>('/api/auth/reset-password', { method: 'POST', body: JSON.stringify(data) }),
   changePassword: (token: string, data: ChangePasswordData) =>
     request<void>('/api/users/me/password', { method: 'PUT', body: JSON.stringify(data) }, token),
+
   catalog: {
     trending: (period: TrendingWindow = 'week') =>
       request<CatalogItem[]>(`/api/catalog/trending?window=${period}`),
@@ -111,9 +122,11 @@ export const api = {
       request<MediaDetails>(`/api/catalog/${format}/${id}`, {}, token),
     browse: (token: string, category: BrowseCategory, sort: BrowseSort, page = 1) =>
       request<CatalogItem[]>(`/api/catalog/browse?category=${category}&sort=${sort}&page=${page}`, {}, token),
-
+    season: (token: string, id: number, season: number) =>
+      request<SeasonDetails>(`/api/catalog/tv/${id}/seasons/${season}`, {}, token),
   },
-    library: {
+
+  library: {
     entry: (token: string, format: MediaFormat, id: number) =>
       request<LibraryEntry>(`/api/library/entries/${format}/${id}`, {}, token),
     list: (token: string, status: LibraryStatus, page = 0, size = 24) =>
@@ -126,5 +139,19 @@ export const api = {
       request<LibraryEntry>(`/api/library/watched/${format}/${id}`, { method: 'PUT', body: JSON.stringify(data) }, token),
     removeWatched: (token: string, format: MediaFormat, id: number) =>
       request<void>(`/api/library/watched/${format}/${id}`, { method: 'DELETE' }, token),
+    progress: (token: string, id: number) =>
+      request<EpisodeLog[]>(`/api/library/progress/tv/${id}`, {}, token),
+    logEpisode: (token: string, id: number, season: number, episode: number, data: WatchedData) =>
+      request<EpisodeLog>(`/api/library/progress/tv/${id}/seasons/${season}/episodes/${episode}`,
+        { method: 'PUT', body: JSON.stringify(data) }, token),
+    removeEpisode: (token: string, id: number, season: number, episode: number) =>
+      request<void>(`/api/library/progress/tv/${id}/seasons/${season}/episodes/${episode}`,
+        { method: 'DELETE' }, token),
+    markSeason: (token: string, id: number, season: number, until?: number) =>
+      request<EpisodeLog[]>(
+        `/api/library/progress/tv/${id}/seasons/${season}${until ? `?until=${until}` : ''}`,
+        { method: 'PUT' }, token),
+    removeWatching: (token: string, id: number) =>
+      request<void>(`/api/library/watching/tv/${id}`, { method: 'DELETE' }, token),
   },
 }

@@ -45,8 +45,8 @@ public class LibraryController {
     private final TrackEpisodesUseCase track;
 
     public LibraryController(AddToWatchlistUseCase addToWatchlist, MarkAsWatchedUseCase markAsWatched,
-                             RemoveEntryUseCase removeEntry, ListEntriesUseCase listEntries,
-                             GetEntryUseCase getEntry, TrackEpisodesUseCase track) {
+            RemoveEntryUseCase removeEntry, ListEntriesUseCase listEntries,
+            GetEntryUseCase getEntry, TrackEpisodesUseCase track) {
         this.addToWatchlist = addToWatchlist;
         this.markAsWatched = markAsWatched;
         this.removeEntry = removeEntry;
@@ -61,7 +61,8 @@ public class LibraryController {
 
     private Page<LibraryEntryResponse> list(Jwt jwt, EntryStatus status, int page, int size) {
         var pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100));
-        return listEntries.execute(userId(jwt), status, pageable).map(LibraryEntryResponse::from);
+        return listEntries.execute(userId(jwt), status, pageable)
+                .map(i -> LibraryEntryResponse.from(i.entry(), i.progress()));
     }
 
     // Watchlist
@@ -110,7 +111,8 @@ public class LibraryController {
         removeEntry.execute(userId(jwt), MediaFormat.from(format), tmdbId, EntryStatus.WATCHED);
     }
 
-    // Situação de um título para o usuário (para a página do título). 404 se não estiver em nenhuma lista.
+    // Situação de um título para o usuário (para a página do título). 404 se não
+    // estiver em nenhuma lista.
 
     @GetMapping("/entries/{format}/{tmdbId}")
     public LibraryEntryResponse entry(@AuthenticationPrincipal Jwt jwt,
