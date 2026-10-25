@@ -41,9 +41,8 @@ public class StartRegistrationUseCase {
 
     @Transactional
     public void execute(RegisterUserCommand c) {
-        var hash = passwordEncoder.encode(c.password());
         // Reaproveita as validações do domínio (nome, username, email). Não persiste nada.
-        var candidate = User.register(c.email(), c.username(), c.firstName(), c.lastName(), hash);
+        var candidate = User.register(c.email(), c.username(), c.firstName(), c.lastName(), "pending");
 
         if (userRepository.findByEmail(candidate.getEmail()).isPresent())
             throw new EmailAlreadyInUseException(candidate.getEmail());
@@ -51,14 +50,22 @@ public class StartRegistrationUseCase {
             throw new UsernameAlreadyInUseException(candidate.getUsername());
 
         var now = Instant.now();
-        pendingRepository.findByEmail(candidate.getEmail())
-                .filter(p -> p.lastSentAt().plus(RESEND_COOLDOWN).isAfter(now))
+        var existing = pendingRepository.findByEmail(candidate.getEmail());
+
+        existing.filter(p -> p.lastSentAt().plus(RESEND_COOLDOWN).isAfter(now))
                 .ifPresent(p -> { throw new VerificationCodeRecentlySentException(); });
 
+        // Reenviar o código não zera as tentativas, senão dá 5 palpites novos a cada 60s.
+        int attempts = existing
+                .filter(p -> !p.expired(now))
+                .map(PendingRegistration::attempts)
+                .orElse(0);
+
+        var hash = passwordEncoder.encode(c.password());
         var code = codeService.generate();
         pendingRepository.save(new PendingRegistration(
                 candidate.getEmail(), candidate.getUsername(), candidate.getFirstName(), candidate.getLastName(),
-                hash, codeService.hash(candidate.getEmail(), code), now.plus(CODE_TTL), 0, now));
+                hash, codeService.hash(candidate.getEmail(), code), now.plus(CODE_TTL), attempts, now));
 
         mailer.send(candidate.getEmail(), candidate.getFirstName(), code);
     }

@@ -29,6 +29,8 @@ export default function ForgotPasswordPage() {
     } catch (e) {
       if (e instanceof ApiError && e.status === 404) {
         setError('email', { message: 'Não existe uma conta com este email.' }, { shouldFocus: true })
+      } else if (e instanceof ApiError && e.status === 429) {
+        setServerError('Muitas tentativas. Aguarde um minuto e peça o link de novo.')
       } else {
         setServerError('Não foi possível enviar agora. Tente novamente.')
       }

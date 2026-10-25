@@ -5,14 +5,13 @@ import java.util.UUID;
 
 import com.corsini.corsabox.identity.domain.User;
 
-public record UserSummaryResponse(UUID id, String username, String firstName, String lastName, String email, Instant createdAt) {
+public record UserSummaryResponse(UUID id, String username, String firstName, String lastName, Instant createdAt) {
     public static UserSummaryResponse from(User user) {
         return new UserSummaryResponse(
-            user.getId().id(), 
+            user.getId().id(),
             user.getUsername(),
-            user.getFirstName(), 
+            user.getFirstName(),
             user.getLastName(),
-            user.getEmail(),
             user.getCreatedAt());
     }
-}   
+}

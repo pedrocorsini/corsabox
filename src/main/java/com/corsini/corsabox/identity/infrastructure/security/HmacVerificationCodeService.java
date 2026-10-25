@@ -1,18 +1,28 @@
 package com.corsini.corsabox.identity.infrastructure.security;
 
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.HexFormat;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.corsini.corsabox.identity.application.port.VerificationCodeService;
 
 @Component
-public class Sha256VerificationCodeService implements VerificationCodeService {
+public class HmacVerificationCodeService implements VerificationCodeService {
     private static final SecureRandom RANDOM = new SecureRandom();
+
+    private final SecretKeySpec key;
+
+    public HmacVerificationCodeService(@Value("${app.verification.secret}") String secret) {
+        this.key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+    }
 
     @Override
     public String generate() {
@@ -22,10 +32,11 @@ public class Sha256VerificationCodeService implements VerificationCodeService {
     @Override
     public String hash(String email, String code) {
         try {
-            var digest = MessageDigest.getInstance("SHA-256")
-                    .digest((email + ":" + code).getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(digest);
-        } catch (NoSuchAlgorithmException e) {
+            // Mac não é thread-safe, então uma instância por chamada.
+            var mac = Mac.getInstance("HmacSHA256");
+            mac.init(key);
+            return HexFormat.of().formatHex(mac.doFinal((email + ":" + code).getBytes(StandardCharsets.UTF_8)));
+        } catch (GeneralSecurityException e) {
             throw new IllegalStateException(e);
         }
     }

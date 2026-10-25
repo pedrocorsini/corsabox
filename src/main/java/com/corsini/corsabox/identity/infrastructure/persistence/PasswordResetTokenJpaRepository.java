@@ -39,4 +39,10 @@ public class PasswordResetTokenJpaRepository implements PasswordResetTokenReposi
         if (repo.markUsed(tokenHash, now) == 0) return Optional.empty();
         return repo.findByTokenHash(tokenHash).map(e -> new UserId(e.getUserId()));
     }
+
+    @Override
+    public Optional<Instant> lastIssuedAt(UserId userId) {
+        return repo.findFirstByUserIdOrderByCreatedAtDesc(userId.id())
+                .map(PasswordResetTokenEntity::getCreatedAt);
+    }
 }

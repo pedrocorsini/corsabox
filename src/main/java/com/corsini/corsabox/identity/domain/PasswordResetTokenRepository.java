@@ -11,4 +11,7 @@ public interface PasswordResetTokenRepository {
 
     // Marca como usado de forma atômica. Só uma chamada concorrente consegue; as outras recebem vazio.
     Optional<UserId> consume(String tokenHash, Instant now);
+
+    // Quando o último link foi emitido para o usuário, usado ou não.
+    Optional<Instant> lastIssuedAt(UserId userId);
 }

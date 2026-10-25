@@ -50,7 +50,9 @@ function VerifyStep({ data, onBack }: { data: RegisterData; onBack: () => void }
           ? 'Código inválido ou expirado.'
           : e instanceof ApiError && e.status === 409
             ? 'Este email ou username já está em uso.'
-            : 'Não foi possível confirmar. Tente novamente.',
+            : e instanceof ApiError && e.status === 429
+              ? 'Muitas tentativas. Aguarde alguns minutos e tente de novo.'
+              : 'Não foi possível confirmar. Tente novamente.',
       )
     }
   }

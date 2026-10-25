@@ -10,9 +10,12 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 
 import com.corsini.corsabox.identity.domain.exception.EmailAlreadyInUseException;
+import com.corsini.corsabox.identity.domain.exception.EmailNotFoundException;
 import com.corsini.corsabox.identity.domain.exception.InvalidCredentialsException;
 import com.corsini.corsabox.identity.domain.exception.InvalidResetTokenException;
 import com.corsini.corsabox.identity.domain.exception.InvalidVerificationCodeException;
+import com.corsini.corsabox.identity.domain.exception.ResetLinkRecentlySentException;
+import com.corsini.corsabox.identity.domain.exception.TooManyLoginAttemptsException;
 import com.corsini.corsabox.identity.domain.exception.UserNotFoundException;
 import com.corsini.corsabox.identity.domain.exception.UsernameAlreadyInUseException;
 import com.corsini.corsabox.identity.domain.exception.VerificationCodeRecentlySentException;
@@ -51,13 +54,13 @@ public class UserExceptionHandler extends ResponseEntityExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
-    @ExceptionHandler(UserNotFoundException.class)
-    ProblemDetail handleNotFound(UserNotFoundException ex) {
+    @ExceptionHandler({UserNotFoundException.class, EmailNotFoundException.class})
+    ProblemDetail handleNotFound(RuntimeException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
-    @ExceptionHandler(VerificationCodeRecentlySentException.class)
-    ProblemDetail handleTooMany(VerificationCodeRecentlySentException ex) {
+    @ExceptionHandler({VerificationCodeRecentlySentException.class, ResetLinkRecentlySentException.class, TooManyLoginAttemptsException.class})
+    ProblemDetail handleTooMany(RuntimeException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
     }
 }

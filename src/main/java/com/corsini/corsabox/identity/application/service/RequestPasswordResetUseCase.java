@@ -13,6 +13,7 @@ import com.corsini.corsabox.identity.domain.PasswordResetToken;
 import com.corsini.corsabox.identity.domain.PasswordResetTokenRepository;
 import com.corsini.corsabox.identity.domain.UserRepository;
 import com.corsini.corsabox.identity.domain.exception.EmailNotFoundException;
+import com.corsini.corsabox.identity.domain.exception.ResetLinkRecentlySentException;
 
 @Service
     public class RequestPasswordResetUseCase {
@@ -21,6 +22,7 @@ import com.corsini.corsabox.identity.domain.exception.EmailNotFoundException;
     private final PasswordResetMailer mailer;
     private final ResetTokenService tokenService;
     private final Duration ttl;
+    private static final Duration RESEND_COOLDOWN = Duration.ofSeconds(60);
 
     public RequestPasswordResetUseCase(UserRepository userRepository,
                                     PasswordResetTokenRepository tokenRepository,
@@ -39,7 +41,12 @@ import com.corsini.corsabox.identity.domain.exception.EmailNotFoundException;
                 .filter(u -> u.getPasswordHash() != null)
                 .orElseThrow(EmailNotFoundException::new);
 
-        tokenRepository.invalidateAllFor(user.getId(), Instant.now());
+        var now = Instant.now();
+        tokenRepository.lastIssuedAt(user.getId())
+                .filter(t -> t.plus(RESEND_COOLDOWN).isAfter(now))
+                .ifPresent(t -> { throw new ResetLinkRecentlySentException(); });
+
+        tokenRepository.invalidateAllFor(user.getId(), now);
 
         var raw = tokenService.generate();
         tokenRepository.save(PasswordResetToken.issue(user.getId(), tokenService.hash(raw), ttl));

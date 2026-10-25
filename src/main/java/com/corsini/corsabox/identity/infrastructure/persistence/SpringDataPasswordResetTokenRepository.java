@@ -26,4 +26,5 @@ public interface SpringDataPasswordResetTokenRepository extends JpaRepository<Pa
         where t.userId = :userId and t.usedAt is null
         """)
     int invalidateOpenTokens(@Param("userId") UUID userId, @Param("now") Instant now);
+    Optional<PasswordResetTokenEntity> findFirstByUserIdOrderByCreatedAtDesc(UUID userId);
 }

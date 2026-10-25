@@ -33,7 +33,9 @@ export default function LoginPage() {
       setServerError(
         e instanceof ApiError && e.status === 401
           ? 'Email ou senha inválidos.'
-          : 'Não foi possível entrar. Tente novamente.',
+          : e instanceof ApiError && e.status === 429
+            ? 'Muitas tentativas. Aguarde um pouco e tente de novo.'
+            : 'Não foi possível entrar. Tente novamente.',
       )
     }
   }
