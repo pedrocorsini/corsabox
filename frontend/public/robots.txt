@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /catalogo
+Disallow: /perfil
+Disallow: /redefinir-senha
+Disallow: /esqueci-senha
+
+Sitemap: https://www.corsabox.app/sitemap.xml
