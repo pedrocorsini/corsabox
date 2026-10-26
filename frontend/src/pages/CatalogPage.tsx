@@ -78,7 +78,7 @@ export default function CatalogPage() {
     ? 'Todas as categorias'
     : genreIds.length === 1
       ? genres.find((genre) => genre.id === genreIds[0])?.name ?? '1 categoria'
-      : `${genreIds.length} categorias selecionadas`
+      : `${genreIds.length} categorias`
 
   const toggleGenre = (id: number) => {
     setGenreIds(genreIds.includes(id)
