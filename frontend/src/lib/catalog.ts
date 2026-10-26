@@ -92,3 +92,4 @@ export type Episode = {
 }
 
 export type SeasonDetails = { number: number; name?: string | null; episodes: Episode[] }
+

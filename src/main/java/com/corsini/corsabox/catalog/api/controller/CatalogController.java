@@ -10,8 +10,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.corsini.corsabox.catalog.api.response.CatalogItemResponse;
 import com.corsini.corsabox.catalog.api.response.MediaDetailsResponse;
+import com.corsini.corsabox.catalog.api.response.MediaGenreResponse;
 import com.corsini.corsabox.catalog.api.response.SeasonResponse;
 import com.corsini.corsabox.catalog.application.service.BrowseCatalogUseCase;
+import com.corsini.corsabox.catalog.application.service.GetGenreUseCase;
 import com.corsini.corsabox.catalog.application.service.GetMediaDetailsUseCase;
 import com.corsini.corsabox.catalog.application.service.GetSeasonUseCase;
 import com.corsini.corsabox.catalog.application.service.GetTrendingUseCase;
@@ -29,14 +31,17 @@ public class CatalogController {
     private final GetMediaDetailsUseCase getDetails;
     private final BrowseCatalogUseCase browseCatalog;
     private final GetSeasonUseCase getSeason;
+    private final GetGenreUseCase getGenres;
 
     public CatalogController(GetTrendingUseCase getTrending, SearchCatalogUseCase searchCatalog,
-                             GetMediaDetailsUseCase getDetails, BrowseCatalogUseCase browseCatalog, GetSeasonUseCase getSeason) {
+            GetMediaDetailsUseCase getDetails, BrowseCatalogUseCase browseCatalog, GetSeasonUseCase getSeason,
+            GetGenreUseCase getGenres) {
         this.getTrending = getTrending;
         this.searchCatalog = searchCatalog;
         this.getDetails = getDetails;
         this.browseCatalog = browseCatalog;
         this.getSeason = getSeason;
+        this.getGenres = getGenres;
     }
 
     @GetMapping("/trending")
@@ -46,7 +51,7 @@ public class CatalogController {
 
     @GetMapping("/search")
     public List<CatalogItemResponse> search(@RequestParam String q,
-                                            @RequestParam(defaultValue = "1") int page) {
+            @RequestParam(defaultValue = "1") int page) {
         return searchCatalog.execute(q, page).stream().map(CatalogItemResponse::from).toList();
     }
 
@@ -57,9 +62,10 @@ public class CatalogController {
 
     @GetMapping("/browse")
     public List<CatalogItemResponse> browse(@RequestParam String category,
-                                            @RequestParam(defaultValue = "popularity") String sort,
-                                            @RequestParam(defaultValue = "1") int page) {
-        return browseCatalog.execute(BrowseCategory.from(category), BrowseSort.from(sort), page)
+            @RequestParam(defaultValue = "popularity") String sort,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(required = false) List<Integer> genreIds) {
+        return browseCatalog.execute(BrowseCategory.from(category), BrowseSort.from(sort), page, genreIds)
                 .stream().map(CatalogItemResponse::from).toList();
     }
 
@@ -68,4 +74,8 @@ public class CatalogController {
         return SeasonResponse.from(getSeason.execute(id, season));
     }
 
+    @GetMapping("/genres")
+    public List<MediaGenreResponse> genres(@RequestParam String format) {
+        return getGenres.execute(MediaFormat.from(format)).stream().map(MediaGenreResponse::from).toList();
+    }
 }

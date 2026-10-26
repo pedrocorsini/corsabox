@@ -3,6 +3,7 @@ import type { CatalogItem, MediaDetails, MediaFormat, SeasonDetails, TrendingWin
 export type BrowseCategory = 'movies' | 'tv' | 'anime'
 export type BrowseSort = 'popularity' | 'title'
 export type LibraryStatus = 'watchlist' | 'watching' | 'watched'
+export type MediaGenre = { id: number; name: string }
 
 export type LibraryEntry = {
   id: string
@@ -120,8 +121,13 @@ export const api = {
       request<CatalogItem[]>(`/api/catalog/search?q=${encodeURIComponent(q)}&page=${page}`, {}, token),
     details: (token: string, format: MediaFormat, id: number) =>
       request<MediaDetails>(`/api/catalog/${format}/${id}`, {}, token),
-    browse: (token: string, category: BrowseCategory, sort: BrowseSort, page = 1) =>
-      request<CatalogItem[]>(`/api/catalog/browse?category=${category}&sort=${sort}&page=${page}`, {}, token),
+    genres: (token: string, format: MediaFormat) =>
+      request<MediaGenre[]>(`/api/catalog/genres?format=${format}`, {}, token),
+    browse: (token: string, category: BrowseCategory, sort: BrowseSort, page = 1, genreIds: number[] = []) => {
+      const genres = genreIds.length ? `&genreIds=${genreIds.join(',')}` : ''
+      return request<CatalogItem[]>(
+        `/api/catalog/browse?category=${category}&sort=${sort}&page=${page}${genres}`, {}, token)
+    },
     season: (token: string, id: number, season: number) =>
       request<SeasonDetails>(`/api/catalog/tv/${id}/seasons/${season}`, {}, token),
   },

@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { Loader2, Search } from 'lucide-react'
+import { ChevronDown, Loader2, Search } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
 import { AppHeader } from '../components/AppHeader'
 import { Poster } from '../components/Poster'
 import { Button, ErrorBanner } from '../components/ui'
-import { api, type BrowseCategory, type BrowseSort } from '../lib/api'
+import { api, type BrowseCategory, type BrowseSort, type MediaGenre } from '../lib/api'
 import { KIND_LABEL, PERIODS, itemKey, titlePath, type CatalogItem, type TrendingWindow } from '../lib/catalog'
 import { useScrollEffects } from '../lib/motion'
 import { useInfiniteScroll } from '../lib/useInfiniteScroll'
@@ -35,30 +35,10 @@ const merge = (a: CatalogItem[], b: CatalogItem[]) => {
   return [...a, ...b.filter((i) => !seen.has(itemKey(i)))]
 }
 
-function fetchPage(token: string, tab: Tab, sort: BrowseSort, period: TrendingWindow, query: string, page: number) {
+function fetchPage(token: string, tab: Tab, sort: BrowseSort, period: TrendingWindow, query: string, page: number, genreIds: number[]) {
   if (query) return api.catalog.search(token, query, page)
   if (tab === 'trending') return api.catalog.trending(period)
-  return api.catalog.browse(token, tab, sort, page)
-}
-
-function Segmented<T extends string>({ label, options, value, onChange }: {
-  label: string
-  options: readonly { id: T; label: string }[]
-  value: T
-  onChange: (id: T) => void
-}) {
-  return (
-    <div role="group" aria-label={label} className="flex flex-wrap items-center gap-2">
-      <span className="mr-1 text-[15px] text-muted">{label}</span>
-      {options.map((o) => (
-        <button key={o.id} aria-pressed={o.id === value} onClick={() => onChange(o.id)}
-          className={`h-9 px-3 text-[15px] font-medium transition active:scale-[0.97] ${
-            o.id === value ? 'bg-paper text-ink' : 'bg-surface text-muted hover:text-white'}`}>
-          {o.label}
-        </button>
-      ))}
-    </div>
-  )
+  return api.catalog.browse(token, tab, sort, page, genreIds)
 }
 
 export default function CatalogPage() {
@@ -70,8 +50,10 @@ export default function CatalogPage() {
   const tab = TABS.find((t) => t.param === params.get('aba'))?.id ?? 'trending'
   const sort: BrowseSort = params.get('ordem') === 'alfabetica' ? 'title' : 'popularity'
   const period: TrendingWindow = params.get('periodo') === 'semana' ? 'week' : 'day'
+  const [genreIds, setGenreIds] = useState<number[]>([])
+  const [genres, setGenres] = useState<MediaGenre[]>([])
   const apiSort: BrowseSort = tab === 'trending' ? 'popularity' : sort
-  const key = query ? `q:${query}` : tab === 'trending' ? `trending:${period}` : `${tab}:${apiSort}`
+  const key = query ? `q:${query}` : tab === 'trending' ? `trending:${period}` : `${tab}:${apiSort}:genres:${genreIds.join(',') || 'all'}`
   const paginated = query !== '' || tab !== 'trending'
 
   const [text, setText] = useState(q)
@@ -81,6 +63,34 @@ export default function CatalogPage() {
   const [loadError, setLoadError] = useState(false)
   const input = useRef<HTMLInputElement>(null)
   const busy = useRef(false)
+
+  const genreFormat = tab === 'movies' ? 'movie' : 'tv'
+
+  const sortedGenres = [...genres].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }))
+  const genreFilterLabel = genreIds.length === 0
+    ? 'Todas as categorias'
+    : genreIds.length === 1
+      ? genres.find((genre) => genre.id === genreIds[0])?.name ?? '1 categoria'
+      : `${genreIds.length} categorias selecionadas`
+
+  const toggleGenre = (id: number) => {
+    setGenreIds((current) => current.includes(id)
+      ? current.filter((genreId) => genreId !== id)
+      : [...current, id].sort((a, b) => a - b))
+  }
+
+  useEffect(() => {
+    if (!token || tab === 'trending' || query) {
+      setGenres([])
+      return
+    }
+    let cancelled = false
+    setGenreIds([])
+    api.catalog.genres(token, genreFormat)
+      .then((items) => { if (!cancelled) setGenres(items) })
+      .catch(() => { if (!cancelled) setGenres([]) })
+    return () => { cancelled = true }
+  }, [token, tab, query, genreFormat])
 
   const setParam = (name: string, value: string | null) =>
     setParams((p) => {
@@ -103,7 +113,7 @@ export default function CatalogPage() {
   useEffect(() => {
     if (!token) return
     let cancelled = false
-    fetchPage(token, tab, apiSort, period, query, 1)
+    fetchPage(token, tab, apiSort, period, query, 1, genreIds)
       .then((items) => {
         if (cancelled) return
         setLoadError(false)
@@ -113,7 +123,7 @@ export default function CatalogPage() {
         if (!cancelled) setResult({ key, items: [], page: 1, more: false, error: true })
       })
     return () => { cancelled = true }
-  }, [token, tab, apiSort, period, query, key, paginated, attempt])
+  }, [token, tab, apiSort, period, query, genreIds, key, paginated, attempt])
 
   // A tecla "/" foca a busca.
   useEffect(() => {
@@ -145,7 +155,7 @@ export default function CatalogPage() {
     setLoadError(false)
     const page = result.page + 1
     try {
-      const next = await fetchPage(token, tab, apiSort, period, query, page)
+      const next = await fetchPage(token, tab, apiSort, period, query, page, genreIds)
       setResult((prev) =>
         prev && prev.key === key ? { ...prev, items: merge(prev.items, next), page, more: next.length > 0 } : prev)
     } catch {
@@ -154,7 +164,7 @@ export default function CatalogPage() {
       busy.current = false
       setLoadingMore(false)
     }
-  }, [token, tab, apiSort, period, query, key, result])
+  }, [token, tab, apiSort, period, query, genreIds, key, result])
 
   const sentinel = useInfiniteScroll(!loading && !!result?.more && !loadError, loadMore)
 
@@ -192,13 +202,76 @@ export default function CatalogPage() {
               })}
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-3">
+            <div className="relative z-30 mt-6 grid grid-cols-2 items-start gap-x-4 gap-y-3 sm:flex sm:flex-wrap sm:items-center sm:gap-x-8">
               {tab === 'trending' && (
-                <Segmented label="Período" options={PERIODS} value={period}
-                  onChange={(id) => setParam('periodo', id === 'day' ? null : 'semana')} />
+                <div className="flex min-w-0 flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+                  <span className="mr-1 text-[15px] text-muted">Período</span>
+                  <label className="sr-only" htmlFor="catalog-period">Período do catálogo em alta</label>
+                  <select
+                    id="catalog-period"
+                    value={period}
+                    onChange={(e) => setParam('periodo', e.target.value === 'day' ? null : 'semana')}
+                    className="h-9 w-full max-w-full cursor-pointer bg-paper px-3 text-[15px] font-medium text-ink transition active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none sm:w-auto"
+                  >
+                    {PERIODS.map((option) => (
+                      <option key={option.id} value={option.id}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
               )}
-              <Segmented label="Ordenar" options={tab === 'trending' ? TRENDING_SORTS : SORTS} value={sort}
-                onChange={(id) => setParam('ordem', id === 'popularity' ? null : 'alfabetica')} />
+              <div className="flex min-w-0 flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+                <span className="mr-1 text-[15px] text-muted">Ordenar</span>
+                <label className="sr-only" htmlFor="catalog-sort">Ordenar catálogo</label>
+                <select
+                  id="catalog-sort"
+                  value={sort}
+                  onChange={(e) => setParam('ordem', e.target.value === 'popularity' ? null : 'alfabetica')}
+                  className="h-9 w-full max-w-full cursor-pointer bg-paper px-3 text-[15px] font-medium text-ink transition active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none sm:w-auto"
+                >
+                  {(tab === 'trending' ? TRENDING_SORTS : SORTS).map((option) => (
+                    <option key={option.id} value={option.id}>{option.label}</option>
+                  ))}
+                </select>
+              </div>
+              {tab !== 'trending' && (
+                <div className="fade-in flex min-w-0 flex-col gap-2 sm:ml-auto sm:w-52">
+                  <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                    <span className="text-[15px] text-muted">Filtro</span>
+                    <button
+                      type="button"
+                      onClick={() => setGenreIds([])}
+                      disabled={genreIds.length === 0}
+                      className="text-sm text-accent transition-colors hover:underline disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:no-underline"
+                    >
+                      Limpar categorias
+                    </button>
+                  </div>
+                  <details className="group relative w-full">
+                    <summary className={`flex h-9 w-full cursor-pointer list-none items-center justify-between gap-3 px-3 text-[15px] font-medium transition active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none ${
+                      genreIds.length > 0 ? 'bg-paper text-ink' : 'bg-surface text-muted hover:text-white'
+                    }`}>
+                      <span className="truncate">{genreFilterLabel}</span>
+                      <ChevronDown size={16} aria-hidden="true" className="shrink-0 transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none" />
+                    </summary>
+                    <div role="group" aria-label="Categorias disponíveis" className="absolute right-0 top-full z-50 mt-2 max-h-72 w-full min-w-56 max-w-[min(90vw,20rem)] overflow-y-auto bg-surface p-2 shadow-xl">
+                      <button type="button" onClick={() => setGenreIds([])} className="mb-1 w-full px-3 py-2 text-left text-sm text-muted transition-colors hover:bg-line hover:text-white">
+                        Todas as categorias
+                      </button>
+                      {sortedGenres.map((genre) => (
+                        <label key={genre.id} className="flex cursor-pointer items-center gap-3 px-3 py-2 text-sm text-white transition-colors hover:bg-line">
+                          <input
+                            type="checkbox"
+                            checked={genreIds.includes(genre.id)}
+                            onChange={() => toggleGenre(genre.id)}
+                            className="accent-accent"
+                          />
+                          <span>{genre.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </details>
+                </div>
+              )}
             </div>
           </>
         )}

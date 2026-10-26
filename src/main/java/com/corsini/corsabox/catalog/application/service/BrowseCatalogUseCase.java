@@ -1,6 +1,7 @@
 package com.corsini.corsabox.catalog.application.service;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 
@@ -19,7 +20,9 @@ public class BrowseCatalogUseCase {
         this.provider = provider;
     }
 
-    public List<CatalogItem> execute(BrowseCategory category, BrowseSort sort, int page) {
-        return provider.browse(category, sort, Math.min(Math.max(page, 1), MAX_PAGE));
+    public List<CatalogItem> execute(BrowseCategory category, BrowseSort sort, int page, List<Integer> genreIds) {
+        var normalizedGenreIds = genreIds == null ? List.<Integer>of()
+                : genreIds.stream().filter(Objects::nonNull).distinct().sorted().toList();
+        return provider.browse(category, sort, Math.min(Math.max(page, 1), MAX_PAGE), normalizedGenreIds);
     }
 }
