@@ -204,14 +204,14 @@ export default function CatalogPage() {
 
             <div className="relative z-30 mt-6 grid grid-cols-2 items-start gap-x-4 gap-y-3 sm:flex sm:flex-wrap sm:items-center sm:gap-x-8">
               {tab === 'trending' && (
-                <div className="flex min-w-0 flex-col items-stretch gap-2 sm:flex-row sm:items-center">
-                  <span className="mr-1 text-[15px] text-muted">Período</span>
+                <div className="flex min-w-0 flex-col gap-2 sm:w-52">
+                  <span className="text-[15px] text-muted">Período</span>
                   <label className="sr-only" htmlFor="catalog-period">Período do catálogo em alta</label>
                   <select
                     id="catalog-period"
                     value={period}
                     onChange={(e) => setParam('periodo', e.target.value === 'day' ? null : 'semana')}
-                    className="h-9 w-full max-w-full cursor-pointer bg-paper px-3 text-[15px] font-medium text-ink transition active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none sm:w-auto"
+                    className="h-9 w-full max-w-full cursor-pointer bg-paper px-3 text-[15px] font-medium text-ink transition active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none"
                   >
                     {PERIODS.map((option) => (
                       <option key={option.id} value={option.id}>{option.label}</option>
@@ -219,14 +219,14 @@ export default function CatalogPage() {
                   </select>
                 </div>
               )}
-              <div className="flex min-w-0 flex-col items-stretch gap-2 sm:flex-row sm:items-center">
-                <span className="mr-1 text-[15px] text-muted">Ordenar</span>
+              <div className="flex min-w-0 flex-col gap-2 sm:w-52">
+                <span className="text-[15px] text-muted">Ordenar</span>
                 <label className="sr-only" htmlFor="catalog-sort">Ordenar catálogo</label>
                 <select
                   id="catalog-sort"
                   value={sort}
                   onChange={(e) => setParam('ordem', e.target.value === 'popularity' ? null : 'alfabetica')}
-                  className="h-9 w-full max-w-full cursor-pointer bg-paper px-3 text-[15px] font-medium text-ink transition active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none sm:w-auto"
+                  className="h-9 w-full max-w-full cursor-pointer bg-paper px-3 text-[15px] font-medium text-ink transition active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none"
                 >
                   {(tab === 'trending' ? TRENDING_SORTS : SORTS).map((option) => (
                     <option key={option.id} value={option.id}>{option.label}</option>
