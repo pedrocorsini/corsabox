@@ -147,15 +147,12 @@ public class TmdbCatalogProvider implements CatalogProvider {
             if (sort == BrowseSort.TITLE)
                 b = b.queryParam("vote_count.gte", 100);
             var selectedGenreIds = genreIds == null ? List.<Integer>of() : genreIds;
-            if (animeOnly) {
-                genres = selectedGenreIds.isEmpty()
-                        ? String.valueOf(ANIMATION_GENRE)
-                        : selectedGenreIds.stream()
-                                .map(id -> ANIMATION_GENRE + "," + id)
-                                .collect(java.util.stream.Collectors.joining("|"));
-            } else if (!selectedGenreIds.isEmpty()) {
-                genres = selectedGenreIds.stream().map(String::valueOf)
-                        .collect(java.util.stream.Collectors.joining("|"));
+            var requiredGenreIds = new ArrayList<Integer>();
+            if (animeOnly) requiredGenreIds.add(ANIMATION_GENRE);
+            requiredGenreIds.addAll(selectedGenreIds);
+            if (!requiredGenreIds.isEmpty()) {
+                genres = requiredGenreIds.stream().distinct().map(String::valueOf)
+                        .collect(java.util.stream.Collectors.joining(","));
             }
 
             if (genres != null) {

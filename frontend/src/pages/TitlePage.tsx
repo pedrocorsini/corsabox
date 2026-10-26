@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, Navigate, useParams, useSearchParams } from 'react-router'
+import { Link, Navigate, useLocation, useParams, useSearchParams } from 'react-router'
 import { ArrowLeft, Play } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
 import { AppHeader } from '../components/AppHeader'
@@ -61,6 +61,11 @@ export default function TitlePage() {
 
 function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) {
   const { token } = useAuth()
+  const location = useLocation()
+  const from = (location.state as { from?: unknown } | null)?.from
+  const catalogReturn = typeof from === 'string' && (from === '/catalogo' || from.startsWith('/catalogo?'))
+    ? from
+    : '/catalogo'
   const [params] = useSearchParams()
   const wantsForm = params.get('assistir') === '1'
   const [item, setItem] = useState<MediaDetails | null>(null)
@@ -181,7 +186,7 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
 
       <AppHeader />
       <main className="mx-auto max-w-6xl px-5 pb-24 pt-2 md:px-8">
-        <Link to="/catalogo" className="inline-flex items-center gap-1.5 text-[15px] text-muted transition-colors hover:text-white">
+        <Link to={catalogReturn} className="inline-flex items-center gap-1.5 text-[15px] text-muted transition-colors hover:text-white">
           <ArrowLeft size={16} /> Catálogo
         </Link>
 

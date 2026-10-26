@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useLocation, useSearchParams } from 'react-router'
 import { ChevronDown, Loader2, Search } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
 import { AppHeader } from '../components/AppHeader'
@@ -35,6 +35,11 @@ const merge = (a: CatalogItem[], b: CatalogItem[]) => {
   return [...a, ...b.filter((i) => !seen.has(itemKey(i)))]
 }
 
+function parseGenreIds(value: string | null) {
+  return [...new Set((value ?? '').split(',').map(Number).filter((id) => Number.isInteger(id) && id > 0))]
+    .sort((a, b) => a - b)
+}
+
 function fetchPage(token: string, tab: Tab, sort: BrowseSort, period: TrendingWindow, query: string, page: number, genreIds: number[]) {
   if (query) return api.catalog.search(token, query, page)
   if (tab === 'trending') return api.catalog.trending(period)
@@ -43,6 +48,8 @@ function fetchPage(token: string, tab: Tab, sort: BrowseSort, period: TrendingWi
 
 export default function CatalogPage() {
   const { token } = useAuth()
+  const location = useLocation()
+  const catalogLocation = `${location.pathname}${location.search}`
   useScrollEffects()
   const [params, setParams] = useSearchParams()
   const q = params.get('q') ?? ''
@@ -50,7 +57,7 @@ export default function CatalogPage() {
   const tab = TABS.find((t) => t.param === params.get('aba'))?.id ?? 'trending'
   const sort: BrowseSort = params.get('ordem') === 'alfabetica' ? 'title' : 'popularity'
   const period: TrendingWindow = params.get('periodo') === 'semana' ? 'week' : 'day'
-  const [genreIds, setGenreIds] = useState<number[]>([])
+  const genreIds = useMemo(() => parseGenreIds(params.get('generos')), [params])
   const [genres, setGenres] = useState<MediaGenre[]>([])
   const apiSort: BrowseSort = tab === 'trending' ? 'popularity' : sort
   const key = query ? `q:${query}` : tab === 'trending' ? `trending:${period}` : `${tab}:${apiSort}:genres:${genreIds.join(',') || 'all'}`
@@ -74,9 +81,9 @@ export default function CatalogPage() {
       : `${genreIds.length} categorias selecionadas`
 
   const toggleGenre = (id: number) => {
-    setGenreIds((current) => current.includes(id)
-      ? current.filter((genreId) => genreId !== id)
-      : [...current, id].sort((a, b) => a - b))
+    setGenreIds(genreIds.includes(id)
+      ? genreIds.filter((genreId) => genreId !== id)
+      : [...genreIds, id])
   }
 
   useEffect(() => {
@@ -85,7 +92,6 @@ export default function CatalogPage() {
       return
     }
     let cancelled = false
-    setGenreIds([])
     api.catalog.genres(token, genreFormat)
       .then((items) => { if (!cancelled) setGenres(items) })
       .catch(() => { if (!cancelled) setGenres([]) })
@@ -97,6 +103,14 @@ export default function CatalogPage() {
       const next = new URLSearchParams(p)
       if (value) next.set(name, value)
       else next.delete(name)
+      return next
+    }, { replace: true })
+
+  const setGenreIds = (ids: number[]) =>
+    setParams((p) => {
+      const next = new URLSearchParams(p)
+      if (ids.length > 0) next.set('generos', [...new Set(ids)].sort((a, b) => a - b).join(','))
+      else next.delete('generos')
       return next
     }, { replace: true })
 
@@ -194,7 +208,13 @@ export default function CatalogPage() {
                 const on = t.id === tab
                 return (
                   <button key={t.id} role="tab" aria-selected={on}
-                    onClick={() => setParam('aba', t.id === 'trending' ? null : t.param)}
+                    onClick={() => setParams((p) => {
+                      const next = new URLSearchParams(p)
+                      if (t.id !== tab) next.delete('generos')
+                      if (t.id === 'trending') next.delete('aba')
+                      else next.set('aba', t.param)
+                      return next
+                    }, { replace: true })}
                     className={`shrink-0 border-b-2 pb-2 text-lg transition-colors ${on ? 'border-accent text-white' : 'border-transparent text-muted hover:text-white'}`}>
                     {t.label}
                   </button>
@@ -293,7 +313,7 @@ export default function CatalogPage() {
             Array.from({ length: 12 }, (_, i) => <li key={i} className="aspect-[2/3] bg-surface" />)}
           {items.map((it, i) => (
             <li key={itemKey(it)} className="fade-in" style={{ animationDelay: `${Math.min(i % 20, 8) * 40}ms` }}>
-              <Link to={titlePath(it)} className="block transition active:scale-[0.97]">
+              <Link to={titlePath(it)} state={{ from: catalogLocation }} className="block transition active:scale-[0.97]">
                 <Poster item={it} />
                 <p className="mt-2 truncate text-[15px]">{it.title}</p>
                 <p className="text-sm text-muted">{KIND_LABEL[it.kind]}{it.year ? ` · ${it.year}` : ''}</p>
