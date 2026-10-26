@@ -9,23 +9,19 @@ import { Wordmark } from '../components/Wordmark'
 import { useScrollEffects } from '../lib/motion'
 
 const GROUPS = [
-  { name: 'Buscar', summary: 'Encontre qualquer título e veja os detalhes antes de decidir.', items: [
-    ['Filmes', 'Longas de todas as épocas e países.'],
-    ['Séries', 'Títulos em exibição e séries já encerradas.'],
-    ['Animes', 'Animação japonesa no mesmo lugar que o resto.'],
-    ['Pôsteres e sinopses', 'A capa e o resumo de cada título.'],
-    ['Elenco e direção', 'Quem atua e quem dirige.'],
+  { name: 'Explorar', summary: 'Filmes, séries e animes em um só catálogo.', items: [
+    ['Filmes, séries e animes', 'Explore diferentes formatos em um só lugar.'],
+    ['Em alta e busca', 'Descubra novidades ou encontre um título.'],
+    ['Detalhes completos', 'Consulte sinopse, elenco, direção e gêneros.'],
   ] },
-  { name: 'Registrar', summary: 'Seu histórico de tudo o que já passou pela tela.', items: [
-    ['Marcar como assistido', 'Um toque e o título entra no seu histórico.'],
-    ['Ver seu histórico', 'O que você já viu, do mais recente ao mais antigo.'],
-    ['Corrigir um registro', 'Marcou errado? Edite ou remova.'],
+  { name: 'Acompanhar', summary: 'Seu histórico com avaliações e progresso.', items: [
+    ['Histórico de títulos', 'Veja o que já assistiu.'],
+    ['Notas e reviews', 'Registre sua avaliação e a data.'],
+    ['Progresso de séries', 'Marque episódios e acompanhe temporadas.'],
   ] },
-  { name: 'Guardar', summary: 'A fila do que você ainda quer ver.', items: [
-    ['Criar a watchlist', 'Uma lista só sua, sem prazo para acabar.'],
-    ['Adicionar um título', 'Achou algo bom? Guarde para depois.'],
-    ['Passar para assistidos', 'Viu? Mova da fila para o histórico.'],
-    ['Tirar da lista', 'Mudou de ideia? Remova.'],
+  { name: 'Organizar', summary: 'Guarde títulos para assistir depois.', items: [
+    ['Sua watchlist', 'Salve títulos para ver mais tarde.'],
+    ['Lista de assistidos', 'Mova títulos da fila para seu histórico.'],
   ] },
 ] as const
 
@@ -198,12 +194,11 @@ export default function LandingPage() {
 
       {/* Rodapé: revelado por baixo da página */}
       <footer data-field="ink" className="sticky bottom-0 z-0 flex min-h-svh flex-col justify-between bg-bg px-5 pb-5 pt-10 text-white md:px-8">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-10 text-[15px] md:grid-cols-5">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-10 text-[15px] md:grid-cols-4">
           <div className="space-y-1 text-muted"><p className="text-white">Explorar</p><a href="#recursos" className="block hover:text-white">Recursos</a><a href="#como-funciona" className="block hover:text-white">Como funciona</a></div>
           <div className="space-y-1 text-muted"><p className="text-white">Conta</p><Link to="/login" className="block hover:text-white">Entrar</Link><Link to="/register" className="block hover:text-white">Criar conta</Link></div>
           <div className="space-y-1 text-muted"><p className="text-white">Informações</p><p>Este é um produto de código aberto sem fins lucrativos apenas para portifólio. Usa a API do TMDB, mas não é endossado nem certificado pelo TMDB.</p><a href="https://github.com/pedrocorsini/corsabox" target="_blank" rel="noopener noreferrer" className="block hover:text-white">Repositório Público</a></div>
           <div className="space-y-1 text-muted"><p className="text-white">Suporte</p><p><a href="mailto:pedrocorsini013@gmail.com" className="block hover:text-white">Envie um e-mail para entrar em contato com o suporte!</a></p></div>
-          <div className="space-y-1 text-muted"><p className="text-white">Status</p><p>Em construção. Catálogo, biblioteca, notas e reviews já funcionam. Episódios de Séries e Animes ainda serão adicionados.</p></div>
         </div>
         <div>
           <Wordmark />
