@@ -14,6 +14,9 @@ import { api, ApiError, type LibraryEntry } from '../lib/api'
 import { metaLine, type MediaDetails, type MediaFormat } from '../lib/catalog'
 import { formatDay, formatInstant } from '../lib/format'
 
+// A TMDB serve a mesma imagem em vários tamanhos. Em tela cheia, o w1280 estica e perde nitidez.
+const hiRes = (url: string) => url.replace('/w1280/', '/original/')
+
 function describe(e: unknown) {
   if (e instanceof ApiError) {
     if (e.status === 0) return e.message
@@ -158,7 +161,24 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
   const watching = entry?.status === 'watching'
 
   return (
-    <div className="min-h-svh bg-bg text-white">
+    <div className="relative isolate min-h-svh bg-bg text-white">
+      {item?.backdropUrl && (
+        <>
+          <img
+            key={item.backdropUrl}
+            src={hiRes(item.backdropUrl)}
+            alt=""
+            decoding="async"
+            onError={(e) => {
+              // Se a versão original falhar, volta para a de 1280.
+              if (e.currentTarget.src !== item.backdropUrl) e.currentTarget.src = item.backdropUrl!
+            }}
+            className="fade-in fixed inset-0 -z-10 h-full w-full object-cover"
+          />
+          <div className="fixed inset-0 -z-10 bg-bg/75" />
+        </>
+      )}
+
       <AppHeader />
       <main className="mx-auto max-w-6xl px-5 pb-24 pt-2 md:px-8">
         <Link to="/catalogo" className="inline-flex items-center gap-1.5 text-[15px] text-muted transition-colors hover:text-white">
@@ -176,7 +196,6 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
 
         {!failure && !item && (
           <div aria-busy="true" className="mt-6 space-y-8">
-            <div className="h-[30svh] bg-surface md:h-[38svh]" />
             <div className="grid gap-8 md:grid-cols-12 md:gap-x-6">
               <div className="aspect-[2/3] w-36 bg-surface md:col-span-3 md:w-full" />
               <div className="space-y-4 md:col-span-8 md:col-start-5">
@@ -189,10 +208,6 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
 
         {item && (
           <div className="fade-in">
-            {item.backdropUrl && (
-              <img src={item.backdropUrl} alt="" className="mt-6 h-[30svh] w-full object-cover md:h-[38svh]" />
-            )}
-
             <div className="mt-8 grid gap-8 md:grid-cols-12 md:gap-x-6">
               <div className="w-36 md:col-span-3 md:w-full">
                 <Poster item={item} />
