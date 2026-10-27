@@ -192,10 +192,10 @@ export default function CatalogPage() {
         </p>
 
         <div className="relative mt-8 max-w-xl">
-          <Search size={18} aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+          <Search size={16} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input ref={input} type="search" value={text} onChange={(e) => setText(e.target.value)}
             aria-label="Buscar no catálogo" placeholder="Buscar filmes, séries e animes"
-            className="w-full bg-surface py-3 pl-11 pr-4 text-white outline-2 outline-transparent transition placeholder:text-muted focus:outline-accent" />
+            className="h-10 w-full rounded-md border border-white/10 bg-surface pl-9 pr-3 text-sm text-white outline-none placeholder:text-muted focus:border-accent" />
         </div>
 
         {query ? (
@@ -230,7 +230,7 @@ export default function CatalogPage() {
                     id="catalog-period"
                     value={period}
                     onChange={(e) => setParam('periodo', e.target.value === 'day' ? null : 'semana')}
-                    className="h-9 w-full max-w-full cursor-pointer bg-paper px-3 text-[15px] font-medium text-ink transition active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none"
+                    className="h-9 w-full max-w-full cursor-pointer rounded-md border border-white/10 bg-surface px-3 text-sm text-white outline-none focus:border-accent"
                   >
                     {PERIODS.map((option) => (
                       <option key={option.id} value={option.id}>{option.label}</option>
@@ -245,7 +245,7 @@ export default function CatalogPage() {
                   id="catalog-sort"
                   value={sort}
                   onChange={(e) => setParam('ordem', e.target.value === 'popularity' ? null : 'alfabetica')}
-                  className="h-9 w-full max-w-full cursor-pointer bg-paper px-3 text-[15px] font-medium text-ink transition active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none"
+                  className="h-9 w-full max-w-full cursor-pointer rounded-md border border-white/10 bg-surface px-3 text-sm text-white outline-none focus:border-accent"
                 >
                   {(tab === 'trending' ? TRENDING_SORTS : SORTS).map((option) => (
                     <option key={option.id} value={option.id}>{option.label}</option>
@@ -266,13 +266,13 @@ export default function CatalogPage() {
                     </button>
                   </div>
                   <details className="group relative w-full">
-                    <summary className={`flex h-9 w-full cursor-pointer list-none items-center justify-between gap-3 px-3 text-[15px] font-medium transition active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none ${
-                      genreIds.length > 0 ? 'bg-paper text-ink' : 'bg-surface text-muted hover:text-white'
+                    <summary className={`flex h-9 w-full cursor-pointer list-none items-center justify-between gap-3 rounded-md border border-white/10 px-3 text-sm outline-none focus-visible:border-accent ${
+                      genreIds.length > 0 ? 'bg-surface text-white' : 'bg-surface text-muted hover:text-white'
                     }`}>
                       <span className="truncate">{genreFilterLabel}</span>
                       <ChevronDown size={16} aria-hidden="true" className="shrink-0 transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none" />
                     </summary>
-                    <div role="group" aria-label="Categorias disponíveis" className="absolute right-0 top-full z-50 mt-2 max-h-72 w-full min-w-56 max-w-[min(90vw,20rem)] overflow-y-auto bg-surface p-2 shadow-xl">
+                    <div role="group" aria-label="Categorias disponíveis" className="absolute right-0 top-full z-50 mt-2 max-h-72 w-full min-w-56 max-w-[min(90vw,20rem)] overflow-y-auto rounded-md border border-white/10 bg-surface p-2 shadow-xl">
                       <button type="button" onClick={() => setGenreIds([])} className="mb-1 w-full px-3 py-2 text-left text-sm text-muted transition-colors hover:bg-line hover:text-white">
                         Todas as categorias
                       </button>

@@ -63,7 +63,7 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
   const { token } = useAuth()
   const location = useLocation()
   const from = (location.state as { from?: unknown } | null)?.from
-  const catalogReturn = typeof from === 'string' && (from === '/catalogo' || from.startsWith('/catalogo?'))
+  const returnTo = typeof from === 'string' && from.startsWith('/') && !from.startsWith('//')
     ? from
     : '/catalogo'
   const [params] = useSearchParams()
@@ -186,8 +186,8 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
 
       <AppHeader />
       <main className="mx-auto max-w-6xl px-5 pb-24 pt-2 md:px-8">
-        <Link to={catalogReturn} className="inline-flex items-center gap-1.5 text-[15px] text-muted transition-colors hover:text-white">
-          <ArrowLeft size={16} /> Catálogo
+        <Link to={returnTo} className="inline-flex items-center gap-1.5 text-[15px] text-muted transition-colors hover:text-white">
+          <ArrowLeft size={16} /> Voltar
         </Link>
 
         {failure && (

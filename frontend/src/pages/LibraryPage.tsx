@@ -1,5 +1,6 @@
-import { Link, useSearchParams } from 'react-router'
-import { Loader2 } from 'lucide-react'
+import { Link, useLocation, useSearchParams } from 'react-router'
+import { Loader2, Search } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { AppHeader } from '../components/AppHeader'
 import { Poster } from '../components/Poster'
 import { RatingMeter } from '../components/Rating'
@@ -27,9 +28,11 @@ const stagger = (i: number) => ({ animationDelay: `${Math.min(i, 8) * 40}ms` })
 
 function WatchedRow({ entry, index }: { entry: LibraryEntry; index: number }) {
   const m = entry.media
+  const location = useLocation()
+  const from = `${location.pathname}${location.search}`
   return (
     <li className="fade-in" style={stagger(index)}>
-      <Link to={titlePath(m)}
+      <Link to={titlePath(m)} state={{ from }}
         className="group grid grid-cols-[4.5rem_1fr] gap-4 bg-surface p-3 transition active:scale-[0.99] md:grid-cols-[5.5rem_1fr] md:gap-5 md:p-4">
         <Poster item={m} />
         <div className="min-w-0 self-center">
@@ -50,9 +53,11 @@ function WatchedRow({ entry, index }: { entry: LibraryEntry; index: number }) {
 
 function WatchingCard({ entry, index }: { entry: LibraryEntry; index: number }) {
   const m = entry.media
+  const location = useLocation()
+  const from = `${location.pathname}${location.search}`
   return (
     <li className="fade-in" style={stagger(index)}>
-      <Link to={titlePath(m)} className="block transition active:scale-[0.97]">
+      <Link to={titlePath(m)} state={{ from }} className="block transition active:scale-[0.97]">
         <Poster item={m} />
         <p className="mt-2 truncate text-[15px]">{m.title}</p>
         <p className="text-sm text-muted">
@@ -61,7 +66,7 @@ function WatchingCard({ entry, index }: { entry: LibraryEntry; index: number }) 
             : `${KIND_LABEL[m.kind]}${m.year ? ` · ${m.year}` : ''}`}
         </p>
       </Link>
-      <Link to={titlePath(m)} className="mt-1 inline-block text-sm font-medium text-accent hover:underline">
+      <Link to={titlePath(m)} state={{ from }} className="mt-1 inline-block text-sm font-medium text-accent hover:underline">
         Continuar
       </Link>
     </li>
@@ -70,14 +75,16 @@ function WatchingCard({ entry, index }: { entry: LibraryEntry; index: number }) 
 
 function WatchlistCard({ entry, index }: { entry: LibraryEntry; index: number }) {
   const m = entry.media
+  const location = useLocation()
+  const from = `${location.pathname}${location.search}`
   return (
     <li className="fade-in" style={stagger(index)}>
-      <Link to={titlePath(m)} className="block transition active:scale-[0.97]">
+      <Link to={titlePath(m)} state={{ from }} className="block transition active:scale-[0.97]">
         <Poster item={m} />
         <p className="mt-2 truncate text-[15px]">{m.title}</p>
         <p className="text-sm text-muted">{KIND_LABEL[m.kind]}{m.year ? ` · ${m.year}` : ''}</p>
       </Link>
-      <Link to={`${titlePath(m)}?assistir=1`} className="mt-1 inline-block text-sm font-medium text-accent hover:underline">
+      <Link to={`${titlePath(m)}?assistir=1`} state={{ from }} className="mt-1 inline-block text-sm font-medium text-accent hover:underline">
         Marcar como Assistido
       </Link>
     </li>
@@ -93,6 +100,27 @@ export default function LibraryPage() {
   const watchlist = useLibraryList('watchlist')
   const lists = { watched, watching, watchlist }
   const list = lists[active.status]
+  const [query, setQuery] = useState('')
+  const [sort, setSort] = useState<'recent' | 'oldest' | 'title'>('recent')
+  const visibleItems = useMemo(() => {
+    const normalized = query.trim().toLocaleLowerCase('pt-BR')
+    return list.items
+      .filter((entry) => !normalized || entry.media.title.toLocaleLowerCase('pt-BR').includes(normalized))
+      .slice()
+      .sort((a, b) => {
+        if (sort === 'title') return a.media.title.localeCompare(b.media.title, 'pt-BR', { sensitivity: 'base' })
+        const direction = sort === 'oldest' ? 1 : -1
+        if (active.status === 'watched') {
+          // Títulos sem data assistida ficam sempre no fim; não usar addedAt como substituto.
+          if (!a.watchedOn && !b.watchedOn) return b.addedAt.localeCompare(a.addedAt)
+          if (!a.watchedOn) return 1
+          if (!b.watchedOn) return -1
+          return direction * a.watchedOn.localeCompare(b.watchedOn)
+            || b.addedAt.localeCompare(a.addedAt)
+        }
+        return direction * a.addedAt.localeCompare(b.addedAt)
+      })
+  }, [active.status, list.items, query, sort])
   const [emptyTitle, emptyText] = EMPTY[active.status]
   const sentinel = useInfiniteScroll(!list.loading && list.hasMore && !list.loadError, list.loadMore)
 
@@ -118,6 +146,24 @@ export default function LibraryPage() {
         </div>
 
         <div role="tabpanel" className="mt-8">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <label className="flex items-center gap-2 text-sm text-muted">
+              <span>Ordenar</span>
+              <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}
+                aria-label="Ordenar títulos"
+                className="h-9 rounded-md border border-white/10 bg-surface px-3 text-sm text-white outline-none focus:border-accent">
+                <option value="recent">Mais recentes</option>
+                <option value="oldest">Mais antigos</option>
+                <option value="title">A a Z</option>
+              </select>
+            </label>
+            <label className="relative ml-auto block w-full sm:w-56">
+              <Search size={16} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+              <input type="search" value={query} onChange={(e) => setQuery(e.target.value)}
+                placeholder="Buscar título" aria-label="Buscar na lista"
+                className="h-9 w-full rounded-md border border-white/10 bg-surface pl-9 pr-3 text-sm text-white outline-none placeholder:text-muted focus:border-accent" />
+            </label>
+          </div>
           {list.loading && (
             <ul aria-busy="true" className="space-y-2">
               {Array.from({ length: 5 }, (_, i) => <li key={i} className="h-28 bg-surface" />)}
@@ -142,11 +188,11 @@ export default function LibraryPage() {
           {list.items.length > 0 && (
             active.status === 'watched' ? (
               <ul className="space-y-2">
-                {list.items.map((e, i) => <WatchedRow key={e.id} entry={e} index={i} />)}
+                {visibleItems.map((e, i) => <WatchedRow key={e.id} entry={e} index={i} />)}
               </ul>
             ) : (
               <ul className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-                {list.items.map((e, i) =>
+                {visibleItems.map((e, i) =>
                   active.status === 'watching'
                     ? <WatchingCard key={e.id} entry={e} index={i} />
                     : <WatchlistCard key={e.id} entry={e} index={i} />)}
