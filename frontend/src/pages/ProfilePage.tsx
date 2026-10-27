@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useAuth } from '../auth/AuthContext'
+import { useAuth } from '../auth/useAuth'
 import { AppHeader } from '../components/AppHeader'
 import { ChangePasswordForm } from '../components/ChangePasswordForm'
 import { ErrorBanner, Field, SubmitButton, SuccessBanner } from '../components/ui'
@@ -105,7 +105,8 @@ function ProfileForm({ user }: { user: User }) {
   const values = useWatch({ control })
   const hasChanges = Object.keys(diff(values as Form, user)).length > 0
 
-  const notify = (kind: Notice['kind'], text: string) => setNotice({ id: Date.now(), kind, text })
+  const notify = (kind: Notice['kind'], text: string) =>
+    setNotice((current) => ({ id: (current?.id ?? 0) + 1, kind, text }))
 
   const onSubmit = async (data: Form) => {
     setNotice(null)
@@ -175,4 +176,4 @@ function ProfileForm({ user }: { user: User }) {
       </div>
     </form>
   )
-} 
+}

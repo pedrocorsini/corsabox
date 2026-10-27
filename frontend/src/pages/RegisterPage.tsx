@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { AuthLayout } from '../components/AuthLayout'
 import { ErrorBanner, Field, SubmitButton, SuccessBanner } from '../components/ui'
-import { useAuth } from '../auth/AuthContext'
+import { useAuth } from '../auth/useAuth'
 import { api, ApiError, type RegisterData } from '../lib/api'
 
 const schema = z

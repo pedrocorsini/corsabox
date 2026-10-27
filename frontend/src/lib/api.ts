@@ -91,32 +91,46 @@ export function bindSession(handler: (() => void) | null) {
 let refreshing: Promise<string | null> | null = null
 
 /** Devolve o novo access token, ou null se a sessão acabou de vez. Erro de rede não derruba a sessão. */
-function refreshAccessToken(): Promise<string | null> {
+function refreshAccessToken(usedToken: string): Promise<string | null> {
   refreshing ??= (async () => {
-    let res: Response
-    try {
-      res = await fetch(`${BASE}/api/auth/refresh`, { method: 'POST', credentials: 'include' })
-    } catch {
-      throw new ApiError(0, 'Sem conexão com o servidor. Tente novamente.')
+    const refresh = async (): Promise<string | null> => {
+      // Outra aba pode ter renovado enquanto esta aguardava o bloqueio.
+      const latest = tokenStore.get()
+      if (latest && latest !== usedToken) return latest
+
+      let res: Response
+      try {
+        res = await fetch(`${BASE}/api/auth/refresh`, { method: 'POST', credentials: 'include' })
+      } catch {
+        throw new ApiError(0, 'Sem conexão com o servidor. Tente novamente.')
+      }
+      if (res.status === 401) return null
+      if (!res.ok) throw new ApiError(res.status, 'Algo deu errado. Tente novamente.')
+      const { accessToken } = (await res.json()) as { accessToken: string }
+      tokenStore.set(accessToken)
+      return accessToken
     }
-    if (res.status === 401) return null
-    if (!res.ok) throw new ApiError(res.status, 'Algo deu errado. Tente novamente.')
-    const { accessToken } = (await res.json()) as { accessToken: string }
-    tokenStore.set(accessToken)
-    return accessToken
+
+    // O bloqueio é compartilhado entre abas da mesma origem, evitando consumir
+    // simultaneamente o mesmo refresh token de cookie.
+    if (navigator.locks) {
+      return navigator.locks.request('corsabox.refresh-token', refresh)
+    }
+    return refresh()
   })().finally(() => { refreshing = null })
   return refreshing
 }
 
 async function send(path: string, init: RequestInit, bearer: string | null): Promise<Response> {
   try {
+    const headers = new Headers(init.headers)
+    if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
+    if (bearer) headers.set('Authorization', `Bearer ${bearer}`)
+
     return await fetch(`${BASE}${path}`, {
       ...init,
       credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
-      },
+      headers,
     })
   } catch {
     throw new ApiError(0, 'Sem conexão com o servidor. Tente novamente.')
@@ -128,11 +142,14 @@ async function request<T>(path: string, init: RequestInit = {}, token?: string |
   let res = await send(path, init, used)
 
   if (res.status === 401 && token) {
-    // Outra requisição pode já ter renovado enquanto esta estava em voo.
-    const latest = tokenStore.get()
-    const fresh = latest && latest !== used ? latest : await refreshAccessToken()
+    const fresh = await refreshAccessToken(used ?? token)
     if (fresh) res = await send(path, init, fresh)
-    else onExpired?.()
+    else {
+      // Não encerra uma sessão que outra aba acabou de renovar.
+      const latest = tokenStore.get()
+      if (latest && latest !== used) res = await send(path, init, latest)
+      else onExpired?.()
+    }
   }
 
   if (!res.ok) {

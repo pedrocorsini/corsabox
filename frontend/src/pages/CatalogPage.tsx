@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router'
 import { ChevronDown, Loader2, Search } from 'lucide-react'
-import { useAuth } from '../auth/AuthContext'
+import { useAuth } from '../auth/useAuth'
 import { AppHeader } from '../components/AppHeader'
 import { Poster } from '../components/Poster'
 import { Button, ErrorBanner } from '../components/ui'
@@ -57,8 +57,12 @@ export default function CatalogPage() {
   const tab = TABS.find((t) => t.param === params.get('aba'))?.id ?? 'trending'
   const sort: BrowseSort = params.get('ordem') === 'alfabetica' ? 'title' : 'popularity'
   const period: TrendingWindow = params.get('periodo') === 'semana' ? 'week' : 'day'
+  const genreFormat = tab === 'movies' ? 'movie' : 'tv'
   const genreIds = useMemo(() => parseGenreIds(params.get('generos')), [params])
-  const [genres, setGenres] = useState<MediaGenre[]>([])
+  const [genreData, setGenreData] = useState<{ format: string; items: MediaGenre[] } | null>(null)
+  const genres = token && tab !== 'trending' && !query && genreData?.format === genreFormat
+    ? genreData.items
+    : []
   const apiSort: BrowseSort = tab === 'trending' ? 'popularity' : sort
   const key = query ? `q:${query}` : tab === 'trending' ? `trending:${period}` : `${tab}:${apiSort}:genres:${genreIds.join(',') || 'all'}`
   const paginated = query !== '' || tab !== 'trending'
@@ -70,8 +74,6 @@ export default function CatalogPage() {
   const [loadError, setLoadError] = useState(false)
   const input = useRef<HTMLInputElement>(null)
   const busy = useRef(false)
-
-  const genreFormat = tab === 'movies' ? 'movie' : 'tv'
 
   const sortedGenres = [...genres].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }))
   const genreFilterLabel = genreIds.length === 0
@@ -87,14 +89,11 @@ export default function CatalogPage() {
   }
 
   useEffect(() => {
-    if (!token || tab === 'trending' || query) {
-      setGenres([])
-      return
-    }
+    if (!token || tab === 'trending' || query) return
     let cancelled = false
     api.catalog.genres(token, genreFormat)
-      .then((items) => { if (!cancelled) setGenres(items) })
-      .catch(() => { if (!cancelled) setGenres([]) })
+      .then((items) => { if (!cancelled) setGenreData({ format: genreFormat, items }) })
+      .catch(() => { if (!cancelled) setGenreData({ format: genreFormat, items: [] }) })
     return () => { cancelled = true }
   }, [token, tab, query, genreFormat])
 

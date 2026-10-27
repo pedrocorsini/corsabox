@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useAuth } from '../auth/AuthContext'
+import { useAuth } from '../auth/useAuth'
 import { api, ApiError, type EpisodeLog, type WatchedData } from './api'
 
 export const EMPTY_LOG: WatchedData = { rating: null, watchedOn: null, review: null }

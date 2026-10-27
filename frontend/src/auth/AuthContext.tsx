@@ -1,15 +1,6 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { api, ApiError, bindSession, tokenStore, type UpdateProfileData, type User } from '../lib/api'
-
-type AuthState = {
-  token: string | null
-  user: User | null
-  login: (email: string, password: string) => Promise<void>
-  logout: () => void
-  updateProfile: (data: UpdateProfileData) => Promise<User>
-}
-
-const AuthContext = createContext<AuthState | null>(null)
+import { AuthContext } from './auth-context'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => tokenStore.get())
@@ -80,10 +71,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{ token, user, login, logout, updateProfile }}>{children}</AuthContext.Provider>
   )
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used inside AuthProvider')
-  return ctx
 }

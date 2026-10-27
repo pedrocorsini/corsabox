@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useAuth } from '../auth/AuthContext'
+import { useAuth } from '../auth/useAuth'
 import { api, pageInfo, type LibraryEntry, type LibraryStatus } from './api'
 
 const PAGE_SIZE = 24

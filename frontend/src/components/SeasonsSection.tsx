@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Check } from 'lucide-react'
-import { useAuth } from '../auth/AuthContext'
+import { useAuth } from '../auth/useAuth'
 import { api, type EpisodeLog } from '../lib/api'
 import type { Episode, SeasonDetails, SeasonSummary } from '../lib/catalog'
 import { EMPTY_LOG, episodeKey, useEpisodeProgress } from '../lib/episodes'

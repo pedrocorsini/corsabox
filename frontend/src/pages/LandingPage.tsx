@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
-import { useAuth } from '../auth/AuthContext'
+import { useAuth } from '../auth/useAuth'
 import { Brand } from '../components/Brand'
 import { LiveDiary } from '../components/LiveDiary'
 import { PosterSkeleton, PosterStrip } from '../components/PosterStrip'
