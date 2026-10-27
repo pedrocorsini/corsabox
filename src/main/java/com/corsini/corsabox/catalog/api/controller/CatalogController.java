@@ -18,6 +18,7 @@ import com.corsini.corsabox.catalog.application.service.GetGenreUseCase;
 import com.corsini.corsabox.catalog.application.service.GetMediaDetailsUseCase;
 import com.corsini.corsabox.catalog.application.service.GetSeasonUseCase;
 import com.corsini.corsabox.catalog.application.service.GetTrendingUseCase;
+import com.corsini.corsabox.catalog.application.service.GetNowPlayingUseCase;
 import com.corsini.corsabox.catalog.application.service.GetWatchAvailabilityUseCase;
 import com.corsini.corsabox.catalog.application.service.SearchCatalogUseCase;
 import com.corsini.corsabox.catalog.domain.BrowseCategory;
@@ -29,6 +30,7 @@ import com.corsini.corsabox.catalog.domain.TrendingWindow;
 @RequestMapping("/api/catalog")
 public class CatalogController {
     private final GetTrendingUseCase getTrending;
+    private final GetNowPlayingUseCase getNowPlaying;
     private final SearchCatalogUseCase searchCatalog;
     private final GetMediaDetailsUseCase getDetails;
     private final BrowseCatalogUseCase browseCatalog;
@@ -36,10 +38,11 @@ public class CatalogController {
     private final GetGenreUseCase getGenres;
     private final GetWatchAvailabilityUseCase getWatchAvailability;
 
-    public CatalogController(GetTrendingUseCase getTrending, SearchCatalogUseCase searchCatalog,
+    public CatalogController(GetTrendingUseCase getTrending, GetNowPlayingUseCase getNowPlaying, SearchCatalogUseCase searchCatalog,
             GetMediaDetailsUseCase getDetails, BrowseCatalogUseCase browseCatalog, GetSeasonUseCase getSeason,
             GetGenreUseCase getGenres, GetWatchAvailabilityUseCase getWatchAvailability) {
         this.getTrending = getTrending;
+        this.getNowPlaying = getNowPlaying;
         this.searchCatalog = searchCatalog;
         this.getDetails = getDetails;
         this.browseCatalog = browseCatalog;
@@ -51,6 +54,12 @@ public class CatalogController {
     @GetMapping("/trending")
     public List<CatalogItemResponse> trending(@RequestParam(defaultValue = "week") String window) {
         return getTrending.execute(TrendingWindow.from(window)).stream().map(CatalogItemResponse::from).toList();
+    }
+
+    @GetMapping("/now-playing")
+    public List<CatalogItemResponse> nowPlaying(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(required = false) List<Integer> genreIds) {
+        return getNowPlaying.execute(page, genreIds).stream().map(CatalogItemResponse::from).toList();
     }
 
     @GetMapping("/search")

@@ -17,6 +17,7 @@ public interface CatalogProvider {
     List<CatalogItem> browse(BrowseCategory category, BrowseSort sort, int page, List<Integer> genreIds);
     MediaDetails details(MediaFormat format, int id);
     List<CatalogItem> trending(TrendingWindow window);
+    List<CatalogItem> nowPlaying(int page, List<Integer> genreIds);
     SeasonDetails season(int tvId, int season);
     List<MediaGenre> genres(MediaFormat format);
     WatchAvailability watchAvailability(MediaFormat format, int id);

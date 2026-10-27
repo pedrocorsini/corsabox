@@ -194,6 +194,10 @@ export const api = {
   catalog: {
     trending: (period: TrendingWindow = 'week') =>
       request<CatalogItem[]>(`/api/catalog/trending?window=${period}`),
+    nowPlaying: (page = 1, genreIds: number[] = []) => {
+      const genres = genreIds.length ? `&genreIds=${genreIds.join(',')}` : ''
+      return request<CatalogItem[]>(`/api/catalog/now-playing?page=${page}${genres}`)
+    },
     search: (token: string, q: string, page = 1) =>
       request<CatalogItem[]>(`/api/catalog/search?q=${encodeURIComponent(q)}&page=${page}`, {}, token),
     details: (token: string, format: MediaFormat, id: number) =>

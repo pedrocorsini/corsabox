@@ -10,11 +10,12 @@ import { KIND_LABEL, PERIODS, itemKey, titlePath, type CatalogItem, type Trendin
 import { useScrollEffects } from '../lib/motion'
 import { useInfiniteScroll } from '../lib/useInfiniteScroll'
 
-type Tab = 'trending' | BrowseCategory
+type Tab = 'trending' | 'cinema' | BrowseCategory
 type Result = { key: string; items: CatalogItem[]; page: number; more: boolean; error: boolean }
 
 const TABS: { id: Tab; param: string; label: string }[] = [
   { id: 'trending', param: 'em-alta', label: 'Em alta' },
+  { id: 'cinema', param: 'nos-cinemas', label: 'Nos Cinemas' },
   { id: 'movies', param: 'filmes', label: 'Filmes' },
   { id: 'tv', param: 'series', label: 'Séries' },
   { id: 'anime', param: 'animes', label: 'Animes' },
@@ -43,6 +44,7 @@ function parseGenreIds(value: string | null) {
 function fetchPage(token: string, tab: Tab, sort: BrowseSort, period: TrendingWindow, query: string, page: number, genreIds: number[]) {
   if (query) return api.catalog.search(token, query, page)
   if (tab === 'trending') return api.catalog.trending(period)
+  if (tab === 'cinema') return api.catalog.nowPlaying(page, genreIds)
   return api.catalog.browse(token, tab, sort, page, genreIds)
 }
 
@@ -57,15 +59,15 @@ export default function CatalogPage() {
   const tab = TABS.find((t) => t.param === params.get('aba'))?.id ?? 'trending'
   const sort: BrowseSort = params.get('ordem') === 'alfabetica' ? 'title' : 'popularity'
   const period: TrendingWindow = params.get('periodo') === 'semana' ? 'week' : 'day'
-  const genreFormat = tab === 'movies' ? 'movie' : 'tv'
+  const genreFormat = tab === 'movies' || tab === 'cinema' ? 'movie' : 'tv'
   const genreIds = useMemo(() => parseGenreIds(params.get('generos')), [params])
   const [genreData, setGenreData] = useState<{ format: string; items: MediaGenre[] } | null>(null)
   const genres = token && tab !== 'trending' && !query && genreData?.format === genreFormat
     ? genreData.items
     : []
-  const apiSort: BrowseSort = tab === 'trending' ? 'popularity' : sort
-  const key = query ? `q:${query}` : tab === 'trending' ? `trending:${period}` : `${tab}:${apiSort}:genres:${genreIds.join(',') || 'all'}`
-  const paginated = query !== '' || tab !== 'trending'
+  const apiSort: BrowseSort = tab === 'trending' || tab === 'cinema' ? 'popularity' : sort
+  const key = query ? `q:${query}` : tab === 'trending' ? `trending:${period}` : `${tab}:${tab === 'cinema' ? sort : apiSort}:genres:${genreIds.join(',') || 'all'}`
+  const paginated = query !== '' || (tab !== 'trending')
 
   const [text, setText] = useState(q)
   const [result, setResult] = useState<Result | null>(null)
@@ -152,7 +154,7 @@ export default function CatalogPage() {
 
   const loading = !result || result.key !== key
   const base = result?.items ?? []
-  const items = !query && tab === 'trending' && sort === 'title'
+  const items = !query && (tab === 'trending' || tab === 'cinema') && sort === 'title'
     ? [...base].sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'))
     : base
 
