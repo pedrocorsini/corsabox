@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -29,6 +30,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriBuilder;
 
 import com.corsini.corsabox.catalog.application.port.CatalogProvider;
+import com.corsini.corsabox.catalog.application.port.WatchProvider;
 import com.corsini.corsabox.catalog.domain.BrowseCategory;
 import com.corsini.corsabox.catalog.domain.BrowseSort;
 import com.corsini.corsabox.catalog.domain.CatalogItem;
@@ -40,6 +42,7 @@ import com.corsini.corsabox.catalog.domain.MediaKind;
 import com.corsini.corsabox.catalog.domain.SeasonDetails;
 import com.corsini.corsabox.catalog.domain.SeasonSummary;
 import com.corsini.corsabox.catalog.domain.TrendingWindow;
+import com.corsini.corsabox.catalog.domain.WatchAvailability;
 import com.corsini.corsabox.catalog.domain.exception.CatalogItemNotFoundException;
 import com.corsini.corsabox.catalog.domain.exception.CatalogUnavailableException;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -54,10 +57,11 @@ public class TmdbCatalogProvider implements CatalogProvider {
 
     private final RestClient http;
     private final String language;
+    private final TmdbCinemaStatusProvider cinemaStatus;
 
     public TmdbCatalogProvider(@Value("${app.tmdb.base-url}") String baseUrl,
             @Value("${app.tmdb.token}") String token,
-            @Value("${app.tmdb.language}") String language) {
+            @Value("${app.tmdb.language}") String language, TmdbCinemaStatusProvider cinemaStatus) {
         var client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
         var factory = new JdkClientHttpRequestFactory(client);
         factory.setReadTimeout(Duration.ofSeconds(5));
@@ -67,6 +71,7 @@ public class TmdbCatalogProvider implements CatalogProvider {
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                 .build();
         this.language = language;
+        this.cinemaStatus = cinemaStatus;
         log.info("TMDB token length = {}", token.length());
     }
 
@@ -243,6 +248,10 @@ public class TmdbCatalogProvider implements CatalogProvider {
             LocalDate released = movie ? brazilRelease(d.releaseDates()) : null;
             if (released == null)
                 released = parseDate(movie ? d.releaseDate() : d.firstAirDate());
+            var worldwideRelease = movie ? firstTheatricalRelease(d.releaseDates(), null) : null;
+            if (worldwideRelease == null && movie)
+                worldwideRelease = parseDate(d.releaseDate());
+            var brazilTheatricalRelease = movie ? firstTheatricalRelease(d.releaseDates(), "BR") : null;
             var seasons = movie || d.seasons() == null
                     ? List.<SeasonSummary>of()
                     : d.seasons().stream()
@@ -251,7 +260,8 @@ public class TmdbCatalogProvider implements CatalogProvider {
                             .map(s -> new SeasonSummary(s.number(), text(s.name()), s.episodeCount(),
                                     parseDate(s.airDate())))
                             .toList();
-            return new MediaDetails(item, released, runtime, genres, directors, writers, creators, castNames,
+            return new MediaDetails(item, released, worldwideRelease, brazilTheatricalRelease, runtime,
+                    genres, directors, writers, creators, castNames,
                     trailerKey(d.videos()), seasons);
         } catch (HttpClientErrorException.NotFound e) {
             throw new CatalogItemNotFoundException(format, id);
@@ -259,6 +269,37 @@ public class TmdbCatalogProvider implements CatalogProvider {
             log.error("Falha ao consultar a TMDB", e);
             throw new CatalogUnavailableException(e);
         }
+    }
+
+    @Override
+    @Cacheable(cacheNames = "tmdb-watch-providers", key = "#format + ':' + #id")
+    public WatchAvailability watchAvailability(MediaFormat format, int id) {
+        try {
+            var response = http.get()
+                    .uri(u -> u.path("/{type}/{id}/watch/providers").build(format.path(), id))
+                    .retrieve()
+                    .body(TmdbWatchProviderResults.class);
+            var brazil = response == null || response.results() == null ? null : response.results().get("BR");
+            var inTheaters = format == MediaFormat.MOVIE && cinemaStatus.currentlyPlayingInBrazil().contains(id);
+            if (brazil == null)
+                return new WatchAvailability(null, inTheaters, List.of(), List.of(), List.of(), List.of(), List.of());
+            return new WatchAvailability(brazil.link(), inTheaters, providers(brazil.flatrate()), providers(brazil.free()),
+                    providers(brazil.ads()), providers(brazil.rent()), providers(brazil.buy()));
+        } catch (HttpClientErrorException.NotFound e) {
+            var inTheaters = format == MediaFormat.MOVIE && cinemaStatus.currentlyPlayingInBrazil().contains(id);
+            return new WatchAvailability(null, inTheaters, List.of(), List.of(), List.of(), List.of(), List.of());
+        } catch (RestClientException e) {
+            log.error("Falha ao consultar provedores de streaming na TMDB", e);
+            throw new CatalogUnavailableException(e);
+        }
+    }
+
+    private static List<WatchProvider> providers(List<TmdbWatchProvider> providers) {
+        return providers == null ? List.of() : providers.stream()
+                .filter(p -> p.providerName() != null && !p.providerName().isBlank())
+                .sorted(Comparator.comparingInt(p -> p.displayPriority() == null ? Integer.MAX_VALUE : p.displayPriority()))
+                .map(p -> new WatchProvider(p.providerName(), image(p.logoPath(), "w92")))
+                .toList();
     }
 
     /**
@@ -277,6 +318,23 @@ public class TmdbCatalogProvider implements CatalogProvider {
                 .map(r -> parseDate(r.releaseDate()))
                 .filter(Objects::nonNull)
                 .findFirst()
+                .orElse(null);
+    }
+
+    private static LocalDate firstTheatricalRelease(TmdbReleaseDates rd, String country) {
+        if (rd == null || rd.results() == null)
+            return null;
+        return rd.results().stream()
+                .filter(c -> country == null || country.equals(c.country()))
+                .filter(c -> c.releaseDates() != null)
+                .flatMap(c -> c.releaseDates().stream())
+                .filter(r -> country == null
+                        ? r.type() == 1 || r.type() == 2 || r.type() == 3
+                        : r.type() == 2 || r.type() == 3)
+                .map(TmdbRelease::releaseDate)
+                .map(TmdbCatalogProvider::parseDate)
+                .filter(Objects::nonNull)
+                .min(Comparator.naturalOrder())
                 .orElse(null);
     }
 
@@ -510,4 +568,16 @@ public class TmdbCatalogProvider implements CatalogProvider {
     @JsonIgnoreProperties(ignoreUnknown = true)
     record TmdbGenreList(List<TmdbGenre> genres) {
     }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record TmdbWatchProviderResults(Map<String, TmdbCountryWatchProviders> results) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record TmdbCountryWatchProviders(String link, List<TmdbWatchProvider> flatrate, List<TmdbWatchProvider> free,
+            List<TmdbWatchProvider> ads, List<TmdbWatchProvider> rent, List<TmdbWatchProvider> buy) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record TmdbWatchProvider(@JsonProperty("provider_name") String providerName,
+            @JsonProperty("logo_path") String logoPath,
+            @JsonProperty("display_priority") Integer displayPriority) {}
 }

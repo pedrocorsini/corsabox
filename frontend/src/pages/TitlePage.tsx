@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, Navigate, useLocation, useParams, useSearchParams } from 'react-router'
-import { ArrowLeft, Play } from 'lucide-react'
+import { ArrowLeft, Play, Tv } from 'lucide-react'
 import { useAuth } from '../auth/useAuth'
 import { AppHeader } from '../components/AppHeader'
 import { ConfirmDialog } from '../components/ConfirmDialog'
@@ -8,6 +8,7 @@ import { Poster } from '../components/Poster'
 import { RatingMeter } from '../components/Rating'
 import { SeasonsSection } from '../components/SeasonsSection'
 import { TrailerDialog } from '../components/TrailerDialog'
+import { WhereToWatchDialog } from '../components/WhereToWatchDialog'
 import { WatchedForm, type WatchedPayload } from '../components/WatchedForm'
 import { Button, ErrorBanner } from '../components/ui'
 import { api, ApiError, type LibraryEntry } from '../lib/api'
@@ -76,6 +77,7 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
   const [confirmRemove, setConfirmRemove] = useState(false)
   const [confirmStop, setConfirmStop] = useState(false)
   const [trailerOpen, setTrailerOpen] = useState(false)
+  const [whereToWatchOpen, setWhereToWatchOpen] = useState(false)
   const [epoch, setEpoch] = useState(0)
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -230,11 +232,16 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
                   {item.overview ?? <span className="text-muted">Sem sinopse disponível.</span>}
                 </p>
 
-                {item.trailerKey && (
-                  <Button className="mt-5" onClick={() => setTrailerOpen(true)}>
-                    <Play size={16} aria-hidden="true" /> Assistir trailer
+                <div className="mt-5 flex flex-wrap gap-3">
+                  {item.trailerKey && (
+                    <Button onClick={() => setTrailerOpen(true)}>
+                      <Play size={16} aria-hidden="true" /> Assistir trailer
+                    </Button>
+                  )}
+                  <Button onClick={() => setWhereToWatchOpen(true)}>
+                    <Tv size={16} aria-hidden="true" /> Onde assistir
                   </Button>
-                )}
+                </div>
 
                 {entry?.status === 'watchlist' && (
                   <p className="mt-3 text-muted">Na sua lista de quero ver desde {formatInstant(entry.addedAt)}.</p>
@@ -333,6 +340,18 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
           title={item.title}
           videoKey={item.trailerKey}
           onClose={() => setTrailerOpen(false)}
+        />
+      )}
+      {item && token && (
+        <WhereToWatchDialog
+          open={whereToWatchOpen}
+          title={item.title}
+          token={token}
+          format={format}
+          tmdbId={tmdbId}
+          worldwideReleaseDate={item.worldwideReleaseDate}
+          brazilTheatricalReleaseDate={item.brazilTheatricalReleaseDate}
+          onClose={() => setWhereToWatchOpen(false)}
         />
       )}
     </div>

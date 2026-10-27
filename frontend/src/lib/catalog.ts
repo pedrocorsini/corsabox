@@ -18,6 +18,8 @@ export type CatalogItem = {
 
 export type MediaDetails = CatalogItem & {
   releaseDate?: string      // 'YYYY-MM-DD'
+  worldwideReleaseDate?: string
+  brazilTheatricalReleaseDate?: string
   runtimeMinutes?: number
   genres?: string[]
   directors?: string[]

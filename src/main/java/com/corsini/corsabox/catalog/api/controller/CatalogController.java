@@ -12,11 +12,13 @@ import com.corsini.corsabox.catalog.api.response.CatalogItemResponse;
 import com.corsini.corsabox.catalog.api.response.MediaDetailsResponse;
 import com.corsini.corsabox.catalog.api.response.MediaGenreResponse;
 import com.corsini.corsabox.catalog.api.response.SeasonResponse;
+import com.corsini.corsabox.catalog.api.response.WatchAvailabilityResponse;
 import com.corsini.corsabox.catalog.application.service.BrowseCatalogUseCase;
 import com.corsini.corsabox.catalog.application.service.GetGenreUseCase;
 import com.corsini.corsabox.catalog.application.service.GetMediaDetailsUseCase;
 import com.corsini.corsabox.catalog.application.service.GetSeasonUseCase;
 import com.corsini.corsabox.catalog.application.service.GetTrendingUseCase;
+import com.corsini.corsabox.catalog.application.service.GetWatchAvailabilityUseCase;
 import com.corsini.corsabox.catalog.application.service.SearchCatalogUseCase;
 import com.corsini.corsabox.catalog.domain.BrowseCategory;
 import com.corsini.corsabox.catalog.domain.BrowseSort;
@@ -32,16 +34,18 @@ public class CatalogController {
     private final BrowseCatalogUseCase browseCatalog;
     private final GetSeasonUseCase getSeason;
     private final GetGenreUseCase getGenres;
+    private final GetWatchAvailabilityUseCase getWatchAvailability;
 
     public CatalogController(GetTrendingUseCase getTrending, SearchCatalogUseCase searchCatalog,
             GetMediaDetailsUseCase getDetails, BrowseCatalogUseCase browseCatalog, GetSeasonUseCase getSeason,
-            GetGenreUseCase getGenres) {
+            GetGenreUseCase getGenres, GetWatchAvailabilityUseCase getWatchAvailability) {
         this.getTrending = getTrending;
         this.searchCatalog = searchCatalog;
         this.getDetails = getDetails;
         this.browseCatalog = browseCatalog;
         this.getSeason = getSeason;
         this.getGenres = getGenres;
+        this.getWatchAvailability = getWatchAvailability;
     }
 
     @GetMapping("/trending")
@@ -58,6 +62,11 @@ public class CatalogController {
     @GetMapping("/{format}/{id}")
     public MediaDetailsResponse details(@PathVariable String format, @PathVariable int id) {
         return MediaDetailsResponse.from(getDetails.execute(MediaFormat.from(format), id));
+    }
+
+    @GetMapping("/{format}/{id}/watch-providers")
+    public WatchAvailabilityResponse watchProviders(@PathVariable String format, @PathVariable int id) {
+        return WatchAvailabilityResponse.from(getWatchAvailability.execute(MediaFormat.from(format), id));
     }
 
     @GetMapping("/browse")

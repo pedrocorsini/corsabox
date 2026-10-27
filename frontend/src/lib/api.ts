@@ -4,6 +4,16 @@ export type BrowseCategory = 'movies' | 'tv' | 'anime'
 export type BrowseSort = 'popularity' | 'title'
 export type LibraryStatus = 'watchlist' | 'watching' | 'watched'
 export type MediaGenre = { id: number; name: string }
+export type WatchProvider = { name: string; logoUrl?: string }
+export type WatchAvailability = {
+  link?: string
+  inTheaters: boolean
+  streaming?: WatchProvider[]
+  free?: WatchProvider[]
+  ads?: WatchProvider[]
+  rent?: WatchProvider[]
+  buy?: WatchProvider[]
+}
 
 export type LibraryEntry = {
   id: string
@@ -188,6 +198,8 @@ export const api = {
       request<CatalogItem[]>(`/api/catalog/search?q=${encodeURIComponent(q)}&page=${page}`, {}, token),
     details: (token: string, format: MediaFormat, id: number) =>
       request<MediaDetails>(`/api/catalog/${format}/${id}`, {}, token),
+    watchProviders: (token: string, format: MediaFormat, id: number) =>
+      request<WatchAvailability>(`/api/catalog/${format}/${id}/watch-providers`, {}, token),
     genres: (token: string, format: MediaFormat) =>
       request<MediaGenre[]>(`/api/catalog/genres?format=${format}`, {}, token),
     browse: (token: string, category: BrowseCategory, sort: BrowseSort, page = 1, genreIds: number[] = []) => {
