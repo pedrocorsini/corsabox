@@ -30,7 +30,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register", "/api/auth/register/confirm",
-                                "/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
+                                "/api/auth/forgot-password", "/api/auth/reset-password",
+                                "/api/auth/refresh", "/api/auth/logout").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/catalog/trending").permitAll()
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
                                 "/v3/api-docs/**", "/actuator/health").permitAll()
@@ -46,6 +47,7 @@ public class SecurityConfig {
         config.setAllowedOrigins(allowedOrigins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        config.setAllowCredentials(true);
         var source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", config);
         return source;

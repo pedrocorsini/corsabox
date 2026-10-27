@@ -4,8 +4,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.corsini.corsabox.identity.application.dto.AuthTokens;
 import com.corsini.corsabox.identity.application.port.LoginAttemptPolicy;
-import com.corsini.corsabox.identity.application.port.TokenIssuer;
 import com.corsini.corsabox.identity.domain.User;
 import com.corsini.corsabox.identity.domain.UserRepository;
 import com.corsini.corsabox.identity.domain.exception.InvalidCredentialsException;
@@ -14,22 +14,22 @@ import com.corsini.corsabox.identity.domain.exception.InvalidCredentialsExceptio
 public class LoginUseCase {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final TokenIssuer tokenIssuer;
+    private final SessionService sessions;
     private final LoginAttemptPolicy attempts;
     // Hash descartável com o mesmo custo do encoder, usado quando o email não existe.
     private final String dummyHash;
 
     public LoginUseCase(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                        TokenIssuer tokenIssuer, LoginAttemptPolicy attempts) {
+                        SessionService sessions, LoginAttemptPolicy attempts) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.tokenIssuer = tokenIssuer;
+        this.sessions = sessions;
         this.attempts = attempts;
         this.dummyHash = passwordEncoder.encode("senha-descartavel");
     }
 
-    @Transactional(readOnly = true)
-    public String execute(String rawEmail, String password) {
+    @Transactional
+    public AuthTokens execute(String rawEmail, String password) {
         var email = rawEmail.strip().toLowerCase();
         attempts.checkAllowed(email);
 
@@ -43,6 +43,6 @@ public class LoginUseCase {
         }
 
         attempts.reset(email);
-        return tokenIssuer.issue(user.get());
+        return sessions.open(user.get());
     }
 }

@@ -73,19 +73,68 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}, token?: string | null): Promise<T> {
-  let res: Response
+const BASE = import.meta.env.VITE_API_URL ?? ''
+const TOKEN_KEY = 'corsabox.token'
+
+/** O access token mais recente vive aqui, assim a renovação não dispara efeitos que dependem de `token`. */
+export const tokenStore = {
+  get: () => localStorage.getItem(TOKEN_KEY),
+  set: (t: string) => localStorage.setItem(TOKEN_KEY, t),
+  clear: () => localStorage.removeItem(TOKEN_KEY),
+}
+
+let onExpired: (() => void) | null = null
+export function bindSession(handler: (() => void) | null) {
+  onExpired = handler
+}
+
+let refreshing: Promise<string | null> | null = null
+
+/** Devolve o novo access token, ou null se a sessão acabou de vez. Erro de rede não derruba a sessão. */
+function refreshAccessToken(): Promise<string | null> {
+  refreshing ??= (async () => {
+    let res: Response
+    try {
+      res = await fetch(`${BASE}/api/auth/refresh`, { method: 'POST', credentials: 'include' })
+    } catch {
+      throw new ApiError(0, 'Sem conexão com o servidor. Tente novamente.')
+    }
+    if (res.status === 401) return null
+    if (!res.ok) throw new ApiError(res.status, 'Algo deu errado. Tente novamente.')
+    const { accessToken } = (await res.json()) as { accessToken: string }
+    tokenStore.set(accessToken)
+    return accessToken
+  })().finally(() => { refreshing = null })
+  return refreshing
+}
+
+async function send(path: string, init: RequestInit, bearer: string | null): Promise<Response> {
   try {
-    res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}${path}`, {
+    return await fetch(`${BASE}${path}`, {
       ...init,
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
       },
     })
   } catch {
     throw new ApiError(0, 'Sem conexão com o servidor. Tente novamente.')
   }
+}
+
+async function request<T>(path: string, init: RequestInit = {}, token?: string | null): Promise<T> {
+  const used = token ? (tokenStore.get() ?? token) : null
+  let res = await send(path, init, used)
+
+  if (res.status === 401 && token) {
+    // Outra requisição pode já ter renovado enquanto esta estava em voo.
+    const latest = tokenStore.get()
+    const fresh = latest && latest !== used ? latest : await refreshAccessToken()
+    if (fresh) res = await send(path, init, fresh)
+    else onExpired?.()
+  }
+
   if (!res.ok) {
     const body = await res.json().catch(() => null)
     throw new ApiError(res.status, body?.detail ?? 'Algo deu errado. Tente novamente.')
@@ -98,6 +147,7 @@ async function request<T>(path: string, init: RequestInit = {}, token?: string |
 export const api = {
   login: (data: { email: string; password: string }) =>
     request<{ accessToken: string }>('/api/auth/login', { method: 'POST', body: JSON.stringify(data) }),
+  logout: () => request<void>('/api/auth/logout', { method: 'POST' }),
   startRegister: (data: RegisterData) =>
     request<void>('/api/auth/register', { method: 'POST', body: JSON.stringify(data) }),
   confirmRegister: (data: { email: string; code: string }) =>

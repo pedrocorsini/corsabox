@@ -29,7 +29,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         new Rule("/api/auth/register", 10, Duration.ofHours(1)),
         new Rule("/api/auth/register/confirm", 20, Duration.ofMinutes(15)),
         new Rule("/api/auth/forgot-password", 5, Duration.ofHours(1)),
-        new Rule("/api/auth/login", 10, Duration.ofMinutes(1)));
+        new Rule("/api/auth/login", 10, Duration.ofMinutes(1)),
+        new Rule("/api/auth/refresh", 60, Duration.ofMinutes(1)));
 
     private final ConcurrentHashMap<String, Window> windows = new ConcurrentHashMap<>();
 

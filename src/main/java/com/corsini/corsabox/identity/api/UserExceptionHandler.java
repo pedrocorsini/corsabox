@@ -12,6 +12,7 @@ import org.springframework.core.annotation.Order;
 import com.corsini.corsabox.identity.domain.exception.EmailAlreadyInUseException;
 import com.corsini.corsabox.identity.domain.exception.EmailNotFoundException;
 import com.corsini.corsabox.identity.domain.exception.InvalidCredentialsException;
+import com.corsini.corsabox.identity.domain.exception.InvalidRefreshTokenException;
 import com.corsini.corsabox.identity.domain.exception.InvalidResetTokenException;
 import com.corsini.corsabox.identity.domain.exception.InvalidVerificationCodeException;
 import com.corsini.corsabox.identity.domain.exception.ResetLinkRecentlySentException;
@@ -25,7 +26,7 @@ import com.corsini.corsabox.identity.domain.exception.WrongCurrentPasswordExcept
 @RestControllerAdvice
 public class UserExceptionHandler extends ResponseEntityExceptionHandler {
 
-    @ExceptionHandler({EmailAlreadyInUseException.class, UsernameAlreadyInUseException.class})
+    @ExceptionHandler({ EmailAlreadyInUseException.class, UsernameAlreadyInUseException.class })
     ProblemDetail handleConflict(RuntimeException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
     }
@@ -41,10 +42,11 @@ public class UserExceptionHandler extends ResponseEntityExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
-    // Token de reset vencido, já usado ou substituído, e senha atual errada na troca de senha.
+    // Token de reset vencido, já usado ou substituído, e senha atual errada na
+    // troca de senha.
     // 400 de propósito: 401 fica reservado para sessão expirada.
-    @ExceptionHandler({InvalidResetTokenException.class, WrongCurrentPasswordException.class,
-                   InvalidVerificationCodeException.class})
+    @ExceptionHandler({ InvalidResetTokenException.class, WrongCurrentPasswordException.class,
+            InvalidVerificationCodeException.class })
     ProblemDetail handleBadRequest(RuntimeException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
@@ -54,13 +56,19 @@ public class UserExceptionHandler extends ResponseEntityExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
-    @ExceptionHandler({UserNotFoundException.class, EmailNotFoundException.class})
+    @ExceptionHandler({ UserNotFoundException.class, EmailNotFoundException.class })
     ProblemDetail handleNotFound(RuntimeException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
-    @ExceptionHandler({VerificationCodeRecentlySentException.class, ResetLinkRecentlySentException.class, TooManyLoginAttemptsException.class})
+    @ExceptionHandler({ VerificationCodeRecentlySentException.class, ResetLinkRecentlySentException.class,
+            TooManyLoginAttemptsException.class })
     ProblemDetail handleTooMany(RuntimeException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    ProblemDetail handleInvalidRefresh(InvalidRefreshTokenException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 }

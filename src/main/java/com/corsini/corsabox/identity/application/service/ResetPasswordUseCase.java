@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.corsini.corsabox.identity.application.port.ResetTokenService;
 import com.corsini.corsabox.identity.domain.PasswordResetTokenRepository;
+import com.corsini.corsabox.identity.domain.RefreshTokenRepository;
 import com.corsini.corsabox.identity.domain.UserRepository;
 import com.corsini.corsabox.identity.domain.exception.InvalidResetTokenException;
 import com.corsini.corsabox.identity.domain.exception.UserNotFoundException;
@@ -18,15 +19,17 @@ public class ResetPasswordUseCase {
     private final PasswordResetTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final ResetTokenService tokenService;
+    private final RefreshTokenRepository refreshTokens;
 
     public ResetPasswordUseCase(UserRepository userRepository,
                                 PasswordResetTokenRepository tokenRepository,
                                 PasswordEncoder passwordEncoder,
-                                ResetTokenService tokenService) {
+                                ResetTokenService tokenService, RefreshTokenRepository refreshTokens) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenService = tokenService;
+        this.refreshTokens = refreshTokens;
     }
 
     @Transactional
@@ -42,5 +45,6 @@ public class ResetPasswordUseCase {
 
         user.changePassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+        refreshTokens.deleteAllFor(userId);
     }
 }   

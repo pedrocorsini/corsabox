@@ -1,7 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { api, ApiError, type UpdateProfileData, type User } from '../lib/api'
-
-const TOKEN_KEY = 'corsabox.token'
+import { api, ApiError, bindSession, tokenStore, type UpdateProfileData, type User } from '../lib/api'
 
 type AuthState = {
   token: string | null
@@ -14,14 +12,26 @@ type AuthState = {
 const AuthContext = createContext<AuthState | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY))
+  const [token, setToken] = useState<string | null>(() => tokenStore.get())
   const [user, setUser] = useState<User | null>(null)
 
-  const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY)
+  const clearSession = useCallback(() => {
+    tokenStore.clear()
     setToken(null)
     setUser(null)
   }, [])
+
+  // Saída pedida pelo usuário: revoga o refresh token no servidor e limpa o estado local.
+  const logout = useCallback(() => {
+    void api.logout().catch(() => {})
+    clearSession()
+  }, [clearSession])
+
+  // Quando a renovação falha de vez, a sessão acabou.
+  useEffect(() => {
+    bindSession(clearSession)
+    return () => bindSession(null)
+  }, [clearSession])
 
   useEffect(() => {
     if (!token) return
@@ -36,10 +46,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })
         .catch((e) => {
           if (cancelled) return
-          // Só um 401 prova que o token acabou. Deploy, cold start e rede fora
-          // não são motivo para derrubar a sessão: espera e tenta de novo.
+          // Aqui um 401 já significa que a renovação também falhou.
+          // Deploy, cold start e rede fora não derrubam a sessão: espera e tenta de novo.
           if (e instanceof ApiError && e.status === 401) {
-            logout()
+            clearSession()
             return
           }
           timer = setTimeout(() => load(attempt + 1), Math.min(1000 * 2 ** attempt, 10_000))
@@ -51,11 +61,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       cancelled = true
       clearTimeout(timer)
     }
-  }, [token, logout])
+  }, [token, clearSession])
 
   const login = async (email: string, password: string) => {
     const { accessToken } = await api.login({ email, password })
-    localStorage.setItem(TOKEN_KEY, accessToken)
+    tokenStore.set(accessToken)
     setToken(accessToken)
   }
 

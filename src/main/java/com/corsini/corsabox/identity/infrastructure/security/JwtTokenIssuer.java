@@ -1,8 +1,9 @@
 package com.corsini.corsabox.identity.infrastructure.security;
 
+import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
@@ -17,8 +18,13 @@ import com.corsini.corsabox.identity.domain.User;
 public class JwtTokenIssuer implements TokenIssuer {
 
     private final JwtEncoder encoder;
+    private final Duration ttl;
 
-    public JwtTokenIssuer(JwtEncoder encoder) { this.encoder = encoder; }
+    public JwtTokenIssuer(JwtEncoder encoder,
+                          @Value("${app.jwt.access-ttl-minutes:15}") long ttlMinutes) {
+        this.encoder = encoder;
+        this.ttl = Duration.ofMinutes(ttlMinutes);
+    }
 
     @Override
     public String issue(User user) {
@@ -26,7 +32,7 @@ public class JwtTokenIssuer implements TokenIssuer {
         var claims = JwtClaimsSet.builder()
                 .subject(user.getId().id().toString())
                 .issuedAt(now)
-                .expiresAt(now.plus(1, ChronoUnit.HOURS))
+                .expiresAt(now.plus(ttl))
                 .build();
         var header = JwsHeader.with(MacAlgorithm.HS256).build();
         return encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
