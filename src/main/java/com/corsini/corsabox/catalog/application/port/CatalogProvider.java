@@ -10,6 +10,7 @@ import com.corsini.corsabox.catalog.domain.MediaFormat;
 import com.corsini.corsabox.catalog.domain.MediaGenre;
 import com.corsini.corsabox.catalog.domain.SeasonDetails;
 import com.corsini.corsabox.catalog.domain.TrendingWindow;
+import com.corsini.corsabox.catalog.domain.WatchAvailability;
 
 public interface CatalogProvider {
     List<CatalogItem> search(String query, int page);
@@ -18,4 +19,5 @@ public interface CatalogProvider {
     List<CatalogItem> trending(TrendingWindow window);
     SeasonDetails season(int tvId, int season);
     List<MediaGenre> genres(MediaFormat format);
+    WatchAvailability watchAvailability(MediaFormat format, int id);
 }

@@ -3,6 +3,7 @@ package com.corsini.corsabox.catalog.domain;
 import java.time.LocalDate;
 import java.util.List;
 
-public record MediaDetails(CatalogItem item, LocalDate releaseDate, Integer runtimeMinutes,
+public record MediaDetails(CatalogItem item, LocalDate releaseDate, LocalDate worldwideReleaseDate,
+                           LocalDate brazilTheatricalReleaseDate, Integer runtimeMinutes,
                            List<String> genres, List<String> directors, List<String> writers,
                            List<String> creators, List<String> cast, String trailerKey, List<SeasonSummary> seasons) {}
