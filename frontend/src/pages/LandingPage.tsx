@@ -26,6 +26,8 @@ const GROUPS = [
 ] as const
 
 const delay = (i: number) => ({ transitionDelay: `${i * 80}ms` })
+// A TMDB serve a mesma imagem em vários tamanhos. Use a versão original em tela cheia.
+const hiRes = (url: string) => url.replace('/w1280/', '/original/')
 
 function PrimaryCta({ className = '', onPaper = false }: { className?: string; onPaper?: boolean }) {
   const { token } = useAuth()
@@ -84,7 +86,17 @@ export default function LandingPage() {
         <section data-field="ink" className="relative flex min-h-svh flex-col overflow-hidden bg-bg py-5 text-white md:py-6">
           {featured?.backdropUrl && (
             <>
-              <img key={itemKey(featured)} src={featured.backdropUrl} alt="" className="fade-in absolute inset-0 h-full w-full object-cover" />
+              <img
+                key={itemKey(featured)}
+                src={hiRes(featured.backdropUrl)}
+                alt=""
+                decoding="async"
+                onError={(e) => {
+                  // Se a versão original falhar, volta para a de 1280.
+                  if (e.currentTarget.src !== featured.backdropUrl) e.currentTarget.src = featured.backdropUrl!
+                }}
+                className="fade-in absolute inset-0 h-full w-full object-cover"
+              />
               <div className="absolute inset-0 bg-bg/75" />
             </>
           )}
