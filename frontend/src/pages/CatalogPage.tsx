@@ -197,7 +197,7 @@ export default function CatalogPage() {
           <Search size={16} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input ref={input} type="search" value={text} onChange={(e) => setText(e.target.value)}
             aria-label="Buscar no catálogo" placeholder="Buscar filmes, séries e animes"
-            className="h-10 w-full rounded-md border border-white/10 bg-surface pl-9 pr-3 text-sm text-white outline-none placeholder:text-muted focus:border-accent" />
+            className="h-10 w-full bg-surface pl-9 pr-3 text-sm text-white outline-none placeholder:text-muted focus:outline-accent" />
         </div>
 
         {query ? (
@@ -228,31 +228,37 @@ export default function CatalogPage() {
                 <div className="flex min-w-0 flex-col gap-2 sm:w-52">
                   <span className="text-[15px] text-muted">Período</span>
                   <label className="sr-only" htmlFor="catalog-period">Período do catálogo em alta</label>
-                  <select
-                    id="catalog-period"
-                    value={period}
-                    onChange={(e) => setParam('periodo', e.target.value === 'day' ? null : 'semana')}
-                    className="h-9 w-full max-w-full cursor-pointer rounded-md border border-white/10 bg-surface px-3 text-sm text-white outline-none focus:border-accent"
-                  >
-                    {PERIODS.map((option) => (
-                      <option key={option.id} value={option.id}>{option.label}</option>
-                    ))}
-                  </select>
+                  <div className="catalog-select relative w-full">
+                    <select
+                      id="catalog-period"
+                      value={period}
+                      onChange={(e) => setParam('periodo', e.target.value === 'day' ? null : 'semana')}
+                      className="h-9 w-full max-w-full cursor-pointer appearance-none bg-surface px-3 pr-9 text-sm text-white outline-none focus:outline-accent"
+                    >
+                      {PERIODS.map((option) => (
+                        <option key={option.id} value={option.id}>{option.label}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={16} aria-hidden="true" className="catalog-select-arrow pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 transition-transform duration-200 motion-reduce:transition-none" />
+                  </div>
                 </div>
               )}
               <div className="flex min-w-0 flex-col gap-2 sm:w-52">
                 <span className="text-[15px] text-muted">Ordenar</span>
                 <label className="sr-only" htmlFor="catalog-sort">Ordenar catálogo</label>
-                <select
-                  id="catalog-sort"
-                  value={sort}
-                  onChange={(e) => setParam('ordem', e.target.value === 'popularity' ? null : 'alfabetica')}
-                  className="h-9 w-full max-w-full cursor-pointer rounded-md border border-white/10 bg-surface px-3 text-sm text-white outline-none focus:border-accent"
-                >
-                  {(tab === 'trending' ? TRENDING_SORTS : SORTS).map((option) => (
-                    <option key={option.id} value={option.id}>{option.label}</option>
-                  ))}
-                </select>
+                <div className="catalog-select relative w-full">
+                  <select
+                    id="catalog-sort"
+                    value={sort}
+                    onChange={(e) => setParam('ordem', e.target.value === 'popularity' ? null : 'alfabetica')}
+                    className="h-9 w-full max-w-full cursor-pointer appearance-none bg-surface px-3 pr-9 text-sm text-white outline-none focus:outline-accent"
+                  >
+                    {(tab === 'trending' ? TRENDING_SORTS : SORTS).map((option) => (
+                      <option key={option.id} value={option.id}>{option.label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={16} aria-hidden="true" className="catalog-select-arrow pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 transition-transform duration-200 motion-reduce:transition-none" />
+                </div>
               </div>
               {tab !== 'trending' && (
                 <div className="fade-in flex min-w-0 flex-col gap-2 sm:ml-auto sm:w-52">
@@ -267,14 +273,12 @@ export default function CatalogPage() {
                       Limpar categorias
                     </button>
                   </div>
-                  <details className="group relative w-full">
-                    <summary className={`flex h-9 w-full cursor-pointer list-none items-center justify-between gap-3 rounded-md border border-white/10 px-3 text-sm outline-none focus-visible:border-accent ${
-                      genreIds.length > 0 ? 'bg-surface text-white' : 'bg-surface text-muted hover:text-white'
-                    }`}>
+                  <details className="genre-filter group relative w-full">
+                    <summary className="flex h-9 w-full select-none cursor-pointer list-none items-center justify-between gap-3 bg-surface px-3 text-sm text-white outline-none focus:outline-2 focus:outline-accent">
                       <span className="truncate">{genreFilterLabel}</span>
                       <ChevronDown size={16} aria-hidden="true" className="shrink-0 transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none" />
                     </summary>
-                    <div role="group" aria-label="Categorias disponíveis" className="absolute right-0 top-full z-50 mt-2 max-h-72 w-full min-w-56 max-w-[min(90vw,20rem)] overflow-y-auto rounded-md border border-white/10 bg-surface p-2 shadow-xl">
+                    <div role="group" aria-label="Categorias disponíveis" className="category-menu-in absolute right-0 top-full z-50 mt-2 max-h-72 w-full min-w-56 max-w-[min(90vw,20rem)] overflow-y-auto rounded-md border border-white/10 bg-surface p-2 shadow-xl">
                       <button type="button" onClick={() => setGenreIds([])} className="mb-1 w-full px-3 py-2 text-left text-sm text-muted transition-colors hover:bg-line hover:text-white">
                         Todas as categorias
                       </button>

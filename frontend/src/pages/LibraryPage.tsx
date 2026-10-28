@@ -151,7 +151,7 @@ export default function LibraryPage() {
               <span>Ordenar</span>
               <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}
                 aria-label="Ordenar títulos"
-                className="h-9 rounded-md border border-white/10 bg-surface px-3 text-sm text-white outline-none focus:border-accent">
+                className="h-9 bg-surface px-3 text-sm text-white outline-none focus:outline-accent">
                 <option value="recent">Mais recentes</option>
                 <option value="oldest">Mais antigos</option>
                 <option value="title">A a Z</option>
@@ -161,7 +161,7 @@ export default function LibraryPage() {
               <Search size={16} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
               <input type="search" value={query} onChange={(e) => setQuery(e.target.value)}
                 placeholder="Buscar título" aria-label="Buscar na lista"
-                className="h-9 w-full rounded-md border border-white/10 bg-surface pl-9 pr-3 text-sm text-white outline-none placeholder:text-muted focus:border-accent" />
+                className="h-9 w-full bg-surface pl-9 pr-3 text-sm text-white outline-none placeholder:text-muted focus:outline-accent" />
             </label>
           </div>
           {list.loading && (
