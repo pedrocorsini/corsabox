@@ -108,31 +108,20 @@ public class TmdbCatalogProvider implements CatalogProvider {
     }
 
     @Override
-    @Cacheable(cacheNames = "tmdb-now-playing-v3", key = "#page + ':' + #genreIds")
+    @Cacheable(cacheNames = "tmdb-now-playing-v4", key = "#page + ':' + #genreIds")
     public List<CatalogItem> nowPlaying(int page, List<Integer> genreIds) {
         var selectedGenres = genreIds == null ? List.<Integer>of() : genreIds;
-        var matches = new ArrayList<CatalogItem>();
-        var sourcePage = 1;
-        var targetCount = page * 20;
-        while (matches.size() < targetCount && sourcePage <= 500) {
-            var currentPage = sourcePage++;
-            var results = fetchResults(u -> u.path("/movie/now_playing")
-                    .queryParam("language", language)
-                    .queryParam("region", "BR")
-                    .queryParam("page", currentPage)
-                    .build());
-            if (results.isEmpty()) break;
-            results.stream()
-                    .filter(r -> selectedGenres.isEmpty() || (r.genreIds() != null
-                            && r.genreIds().containsAll(selectedGenres)))
-                    .map(r -> r.withMediaType("movie"))
-                    .map(this::toItem)
-                    .flatMap(Optional::stream)
-                    .forEach(matches::add);
-        }
-        var start = Math.min((page - 1) * 20, matches.size());
-        var end = Math.min(start + 20, matches.size());
-        return List.copyOf(matches.subList(start, end));
+        return fetchResults(u -> u.path("/movie/now_playing")
+                .queryParam("language", language)
+                .queryParam("region", "BR")
+                .queryParam("page", page)
+                .build()).stream()
+                .filter(r -> selectedGenres.isEmpty() || (r.genreIds() != null
+                        && r.genreIds().containsAll(selectedGenres)))
+                .map(r -> r.withMediaType("movie"))
+                .map(this::toItem)
+                .flatMap(Optional::stream)
+                .toList();
     }
 
     @Override

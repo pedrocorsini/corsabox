@@ -12,8 +12,6 @@ import com.corsini.corsabox.identity.application.port.ResetTokenService;
 import com.corsini.corsabox.identity.domain.PasswordResetToken;
 import com.corsini.corsabox.identity.domain.PasswordResetTokenRepository;
 import com.corsini.corsabox.identity.domain.UserRepository;
-import com.corsini.corsabox.identity.domain.exception.EmailNotFoundException;
-import com.corsini.corsabox.identity.domain.exception.ResetLinkRecentlySentException;
 
 @Service
     public class RequestPasswordResetUseCase {
@@ -39,12 +37,12 @@ import com.corsini.corsabox.identity.domain.exception.ResetLinkRecentlySentExcep
     public void execute(String email) {
         var user = userRepository.findByEmail(email.strip().toLowerCase())
                 .filter(u -> u.getPasswordHash() != null)
-                .orElseThrow(EmailNotFoundException::new);
+                .orElse(null);
+        if (user == null) return;
 
         var now = Instant.now();
-        tokenRepository.lastIssuedAt(user.getId())
-                .filter(t -> t.plus(RESEND_COOLDOWN).isAfter(now))
-                .ifPresent(t -> { throw new ResetLinkRecentlySentException(); });
+        if (tokenRepository.lastIssuedAt(user.getId())
+                .filter(t -> t.plus(RESEND_COOLDOWN).isAfter(now)).isPresent()) return;
 
         tokenRepository.invalidateAllFor(user.getId(), now);
 

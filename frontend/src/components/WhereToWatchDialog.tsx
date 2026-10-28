@@ -36,7 +36,11 @@ function ProviderList({ providers }: { providers: WatchProvider[] }) {
   )
 }
 
-export function WhereToWatchDialog({ open, title, token, format, tmdbId, worldwideReleaseDate,
+export function WhereToWatchDialog(props: Props) {
+  return <WhereToWatchDialogContent key={`${props.open}:${props.token}:${props.format}:${props.tmdbId}`} {...props} />
+}
+
+function WhereToWatchDialogContent({ open, title, token, format, tmdbId, worldwideReleaseDate,
   brazilTheatricalReleaseDate, onClose }: Props) {
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
@@ -54,8 +58,6 @@ export function WhereToWatchDialog({ open, title, token, format, tmdbId, worldwi
   useEffect(() => {
     if (!open) return
     let cancelled = false
-    setData(null)
-    setError(false)
     api.catalog.watchProviders(token, format, tmdbId)
       .then((availability) => { if (!cancelled) setData(availability) })
       .catch(() => { if (!cancelled) setError(true) })
@@ -102,7 +104,7 @@ export function WhereToWatchDialog({ open, title, token, format, tmdbId, worldwi
           {error && (
             <div>
               <p>Não foi possível carregar as opções agora.</p>
-              <button type="button" onClick={() => setAttempt((value) => value + 1)} className="mt-3 text-accent hover:underline">
+              <button type="button" onClick={() => { setData(null); setError(false); setAttempt((value) => value + 1) }} className="mt-3 text-accent hover:underline">
                 Tentar novamente
               </button>
             </div>

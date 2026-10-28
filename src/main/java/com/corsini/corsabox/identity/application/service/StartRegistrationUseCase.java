@@ -14,9 +14,7 @@ import com.corsini.corsabox.identity.domain.PendingRegistration;
 import com.corsini.corsabox.identity.domain.PendingRegistrationRepository;
 import com.corsini.corsabox.identity.domain.User;
 import com.corsini.corsabox.identity.domain.UserRepository;
-import com.corsini.corsabox.identity.domain.exception.EmailAlreadyInUseException;
 import com.corsini.corsabox.identity.domain.exception.UsernameAlreadyInUseException;
-import com.corsini.corsabox.identity.domain.exception.VerificationCodeRecentlySentException;
 
 @Service
 public class StartRegistrationUseCase {
@@ -45,15 +43,14 @@ public class StartRegistrationUseCase {
         var candidate = User.register(c.email(), c.username(), c.firstName(), c.lastName(), "pending");
 
         if (userRepository.findByEmail(candidate.getEmail()).isPresent())
-            throw new EmailAlreadyInUseException(candidate.getEmail());
+            return;
         if (userRepository.existsByUsername(candidate.getUsername()))
             throw new UsernameAlreadyInUseException(candidate.getUsername());
 
         var now = Instant.now();
         var existing = pendingRepository.findByEmail(candidate.getEmail());
 
-        existing.filter(p -> p.lastSentAt().plus(RESEND_COOLDOWN).isAfter(now))
-                .ifPresent(p -> { throw new VerificationCodeRecentlySentException(); });
+        if (existing.filter(p -> p.lastSentAt().plus(RESEND_COOLDOWN).isAfter(now)).isPresent()) return;
 
         // Reenviar o código não zera as tentativas, senão dá 5 palpites novos a cada 60s.
         int attempts = existing
