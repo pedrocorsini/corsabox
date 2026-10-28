@@ -130,7 +130,7 @@ export default function LibraryPage() {
       <main className="mx-auto max-w-6xl px-5 pb-24 pt-12 md:px-8">
         <h1 data-reveal className="text-4xl font-semibold md:text-5xl">Biblioteca</h1>
 
-        <div role="tablist" aria-label="Listas" className="mt-8 flex gap-8 overflow-x-auto">
+        <div role="tablist" aria-label="Listas" className="mt-8 flex gap-4 overflow-x-auto sm:gap-8">
           {TABS.map((t) => {
             const total = lists[t.status].total
             const on = t.status === active.status
@@ -139,7 +139,7 @@ export default function LibraryPage() {
                 onClick={() => setParams({ aba: t.param }, { replace: true })}
                 className={`shrink-0 border-b-2 pb-2 text-lg transition-colors ${on ? 'border-accent text-white' : 'border-transparent text-muted hover:text-white'}`}>
                 {t.label}
-                {total !== null && <span className="ml-2 text-[15px] tabular-nums text-muted">{total}</span>}
+                {total !== null && <span className="ml-1.5 text-[15px] tabular-nums text-muted">{total}</span>}
               </button>
             )
           })}

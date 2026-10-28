@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useAuth } from '../auth/useAuth'
 import { AppHeader } from '../components/AppHeader'
 import { ChangePasswordForm } from '../components/ChangePasswordForm'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 import { ErrorBanner, Field, SubmitButton, SuccessBanner } from '../components/ui'
 import { ApiError, type UpdateProfileData, type User } from '../lib/api'
 import { useScrollEffects } from '../lib/motion'
@@ -35,7 +37,9 @@ function diff(values: Form, user: User): UpdateProfileData {
 }
 
 export default function ProfilePage() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+  const [confirmingLogout, setConfirmingLogout] = useState(false)
   useScrollEffects()
   if (!user) return null
 
@@ -70,6 +74,10 @@ export default function ProfilePage() {
                 </div>
               </dl>
             </div>
+            <button type="button" onClick={() => setConfirmingLogout(true)}
+              className={`mt-6 hidden h-14 w-full border px-5 transition-colors active:scale-[0.99] md:block ${confirmingLogout ? 'border-red-400/50 bg-red-500/15 text-red-200' : 'border-white/15 text-muted hover:border-red-400/50 hover:bg-red-500/15 hover:text-red-200 active:border-red-400/50 active:bg-red-500/15 active:text-red-200'}`}>
+              Sair da conta
+            </button>
           </aside>
 
           <div className="space-y-16 md:col-span-7 md:col-start-6">
@@ -84,8 +92,23 @@ export default function ProfilePage() {
               <ChangePasswordForm />
             </section>
           </div>
+
+          <div className="md:hidden">
+            <button type="button" onClick={() => setConfirmingLogout(true)}
+              className={`h-14 w-full border px-5 transition-colors active:scale-[0.99] ${confirmingLogout ? 'border-red-400/50 bg-red-500/15 text-red-200' : 'border-white/15 text-muted hover:border-red-400/50 hover:bg-red-500/15 hover:text-red-200 active:border-red-400/50 active:bg-red-500/15 active:text-red-200'}`}>
+              Sair da conta
+            </button>
+          </div>
         </div>
       </main>
+      <ConfirmDialog
+        open={confirmingLogout}
+        title="Sair da conta?"
+        description="Você precisará entrar de novo para ver seu diário."
+        confirmLabel="Sair"
+        onConfirm={() => { setConfirmingLogout(false); navigate('/'); logout() }}
+        onCancel={() => setConfirmingLogout(false)}
+      />
     </div>
   )
 }
