@@ -27,7 +27,8 @@ CorsaBox is a catalog and personal diary for movies, series and anime. Browse ti
 ### Features
 
 - **Account and profile:** register with email verification, log in, edit your profile, change your password, and recover access.
-- **Catalog:** browse trending titles, filter movies, series and anime, search the TMDB catalog, and view title, season and episode details.
+- **Catalog:** browse trending titles and movies now playing in Brazil, filter movies, series and anime by genre, search the TMDB catalog, and view title, season and episode details.
+- **Where to watch:** check streaming, rental and purchase availability in Brazil.
 - **Personal library:** maintain watchlist, watched and currently watching lists.
 - **Viewing diary:** rate and review watched titles, record viewing dates, and track watched episodes by series and season.
 - **Responsive experience:** landing page and app layouts for desktop and mobile, with paginated/infinite catalog and library browsing.
@@ -121,11 +122,21 @@ The API can also start the database through Spring Boot's Docker Compose integra
 
 ### 3. Run the API
 
+Set `TMDB_TOKEN` to your TMDB API Read Access Token in the same terminal before starting the API:
+
+```bash
+export TMDB_TOKEN='your-tmdb-read-access-token'
+```
+
+In PowerShell, use `$env:TMDB_TOKEN = 'your-tmdb-read-access-token'` instead.
+
 ```bash
 ./mvnw spring-boot:run
 ```
 
 On Windows, run `mvnw.cmd spring-boot:run`. The API is available at **http://localhost:8080**. Swagger UI is at `/swagger-ui.html` and the health check is at `/actuator/health`.
+
+Without the `prod` profile, verification codes and password reset links are printed in the API terminal instead of being emailed. Use them to complete registration and password recovery locally; Brevo credentials are not needed. Reset links use `APP_FRONTEND_URL`, which defaults to `http://localhost:5173`. These logs contain temporary credentials and should remain local. The `prod` profile uses Brevo instead.
 
 ### 4. Run the frontend
 
@@ -142,19 +153,38 @@ Open **http://localhost:5173**. In development, Vite proxies API requests to the
 ## Environment variables
 
 Set backend variables in the shell or hosting environment before starting the API. `TMDB_TOKEN` enables catalog requests; `APP_JWT_SECRET` and `APP_VERIFICATION_SECRET` should be set to private, strong values outside local development. Email delivery uses `MAIL_API_KEY` and `MAIL_SENDER_EMAIL`; production database credentials are provided with `SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD`. The frontend optionally reads `VITE_API_URL` from `frontend/.env.local` to set the API base URL; leave it unset for the local Vite proxy.
+Additional deployment settings:
+
+| Variable | Purpose |
+|---|---|
+| `SPRING_PROFILES_ACTIVE` | Set to `prod` to use Brevo and production database settings and disable Docker Compose integration. |
+| `SPRING_DATASOURCE_URL` | Override the JDBC URL; the `prod` profile otherwise uses the hosted URL in `application-prod.properties`. |
+| `APP_FRONTEND_URL` | Frontend URL for password reset links; defaults to `http://localhost:5173`. |
+| `APP_CORS_ALLOWED_ORIGINS` | Comma-separated allowed frontend origins; defaults to `http://localhost:5173`. |
+| `PORT` | API port; defaults to `8080`. |
+| `REFRESH_COOKIE_SECURE`, `REFRESH_COOKIE_SAMESITE` | Cookie settings; defaults are `false` and `Lax`. The `prod` profile sets secure cookies to `true`. |
+
+`VITE_API_URL` is embedded at build time. Never put secrets in frontend environment variables.
+
 ## API overview
 
-The REST API provides endpoints for account registration and authentication, profile management, catalog browsing and search, and each user's media library. Public catalog endpoints retrieve title data from TMDB; authenticated library endpoints use the JWT to scope watchlists, viewing records, ratings, reviews and episode progress to the current user. See Swagger UI for the full endpoint reference.
+The REST API provides endpoints for account registration and authentication, profile management, catalog browsing and search, and each user's media library. Trending and now-playing catalog endpoints are public; other catalog endpoints require authentication. Catalog data comes from TMDB; authenticated library endpoints use the JWT to scope watchlists, viewing records, ratings, reviews and episode progress to the current user. See Swagger UI for the full endpoint reference.
 
 ## Contributing
 
 1. Fork the repository and create a branch: `git checkout -b feature/my-feature`.
 2. Commit your changes with a clear message.
-3. Run `./mvnw test` and `npm run lint` before opening a pull request.
+3. Run `./mvnw test` from the repository root, then `npm run lint` and `npm run build` from `frontend` before opening a pull request. On Windows, use `mvnw.cmd test`.
 4. Open a pull request describing what changed and why.
 
 ## Credits
 
 This product uses the TMDB API but is not endorsed or certified by TMDB.
 
-© 2026 CorsaBox
+Watch availability data is provided by JustWatch through TMDB.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+© 2026 Pedro Corsini

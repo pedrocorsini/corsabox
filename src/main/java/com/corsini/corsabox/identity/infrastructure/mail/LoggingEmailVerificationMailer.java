@@ -14,6 +14,6 @@ public class LoggingEmailVerificationMailer implements EmailVerificationMailer {
 
     @Override
     public void send(String email, String firstName, String code) {
-        log.info("Development mail delivery skipped; configure a local mail provider to receive messages");
+        log.info("Código de verificação para {}: {}", email, code);
     }
 }
