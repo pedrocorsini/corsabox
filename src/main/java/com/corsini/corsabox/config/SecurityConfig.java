@@ -1,6 +1,13 @@
 package com.corsini.corsabox.config;
 
 import java.util.List;
+import java.time.Instant;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.security.web.context.NullSecurityContextRepository;
+import com.corsini.corsabox.identity.api.GoogleLoginFlow;
+import com.corsini.corsabox.identity.application.dto.GoogleIdentity;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -22,14 +29,20 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain filterChain(HttpSecurity http,
+            ObjectProvider<ClientRegistrationRepository> registrations,
+            @Value("${app.frontend-url}") String frontendUrl) throws Exception {
         http
             .cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .securityContext(s -> s.securityContextRepository(new NullSecurityContextRepository()))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.GET, "/api/users").denyAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/oauth2/authorization/google", "/login/oauth2/code/google").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/auth/google/config", "/api/auth/google/pending").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/google/complete").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register", "/api/auth/register/confirm",
                                 "/api/auth/forgot-password", "/api/auth/reset-password",
                                 "/api/auth/refresh", "/api/auth/logout").permitAll()
@@ -38,6 +51,30 @@ public class SecurityConfig {
                                 "/v3/api-docs/**", "/actuator/health").permitAll()
                 .anyRequest().authenticated())
             .oauth2ResourceServer(oauth -> oauth.jwt(Customizer.withDefaults()));
+        if (registrations.getIfAvailable() != null) {
+            String destination = frontendUrl.replaceAll("/+$", "") + "/auth/google";
+            http.oauth2Login(oauth -> oauth
+                .successHandler((request, response, authentication) -> {
+                    var principal = (OidcUser) authentication.getPrincipal();
+                    var session = request.getSession();
+                    if (!Boolean.TRUE.equals(principal.getEmailVerified())) {
+                        session.invalidate();
+                        response.sendRedirect(destination + "?error=google");
+                        return;
+                    }
+                    request.changeSessionId();
+                    session.setMaxInactiveInterval(600);
+                    session.setAttribute(GoogleLoginFlow.ATTRIBUTE, new GoogleLoginFlow(
+                        new GoogleIdentity(principal.getSubject(), principal.getEmail(),
+                            principal.getGivenName(), principal.getFamilyName()), Instant.now().plusSeconds(600)));
+                    response.sendRedirect(destination);
+                })
+                .failureHandler((request, response, exception) -> {
+                    var session = request.getSession(false);
+                    if (session != null) session.invalidate();
+                    response.sendRedirect(destination + "?error=google");
+                }));
+        }
         return http.build();
     }
 
