@@ -1,6 +1,27 @@
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://corsabox.onrender.com/api/:path*" },
-    { "source": "/((?!api/|robots\\.txt|sitemap\\.xml|og\\.png|favicon\\.svg|assets/).*)", "destination": "/" }
+    {
+      "source": "/api/:path*",
+      "destination": "https://corsabox.onrender.com/api/:path*"
+    },
+    {
+      "source": "/((?!api/|robots\\.txt|sitemap\\.xml|og\\.png|favicon\\.svg|assets/).*)",
+      "destination": "/"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors 'none'"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        }
+      ]
+    }
   ]
 }
