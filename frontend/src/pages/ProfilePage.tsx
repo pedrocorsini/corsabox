@@ -52,7 +52,7 @@ export default function ProfilePage() {
       <main className="mx-auto max-w-6xl px-5 pb-24 pt-12 md:px-8">
         <h1 data-reveal className="text-4xl font-semibold md:text-5xl">Perfil</h1>
         <p data-reveal style={{ transitionDelay: '80ms' }} className="mt-3 max-w-[52ch] text-lg text-muted">
-          Atualize seu nome, seu username e sua senha. As mudanças valem na hora, em todo o app.
+          Atualize seus dados. As mudanças valem na hora, em todo o app.
         </p>
 
         <div className="mt-12 grid gap-12 md:grid-cols-12 md:gap-x-6">
@@ -87,9 +87,11 @@ export default function ProfilePage() {
             </section>
 
             <section data-reveal>
-              <h2 className="text-xl font-semibold">Senha</h2>
-              <p className="mt-2 text-muted">Use uma senha que você não usa em outros sites.</p>
-              <ChangePasswordForm />
+              <h2 className="text-xl font-semibold">{user.hasPassword ? 'Senha' : 'Acesso à conta'}</h2>
+              {user.hasPassword ? <>
+                <p className="mt-2 text-muted">Use uma senha que você não usa em outros sites.</p>
+                <ChangePasswordForm />
+              </> : <p className="mt-2 text-muted">Você entra com o Google. Sua conta não tem uma senha do CorsaBox.</p>}
             </section>
           </div>
 

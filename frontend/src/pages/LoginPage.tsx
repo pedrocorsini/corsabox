@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { AuthLayout } from '../components/AuthLayout'
+import { GoogleLoginButton } from '../components/GoogleLoginButton'
 import { ErrorBanner, Field, SubmitButton } from '../components/ui'
 import { useAuth } from '../auth/useAuth'
 import { ApiError } from '../lib/api'
@@ -53,6 +54,7 @@ export default function LoginPage() {
         </>
       }
     >
+      <GoogleLoginButton />
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <Field id="email" label="Email" type="email" autoComplete="email"
           error={errors.email?.message} {...register('email')} />

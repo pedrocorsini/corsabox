@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { AuthLayout } from '../components/AuthLayout'
+import { GoogleLoginButton } from '../components/GoogleLoginButton'
 import { ErrorBanner, Field, SubmitButton, SuccessBanner } from '../components/ui'
 import { useAuth } from '../auth/useAuth'
 import { api, ApiError, type RegisterData } from '../lib/api'
@@ -139,6 +140,7 @@ export default function RegisterPage() {
 
   return (
     <AuthLayout title="Crie sua conta" subtitle="Comece a registrar o que você assiste." footer={footer}>
+      <GoogleLoginButton />
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div className="grid grid-cols-2 gap-3">
           <Field id="firstName" label="Nome" autoComplete="given-name"

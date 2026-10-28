@@ -18,7 +18,11 @@ Follow nearby code conventions. Use standard Java formatting, package names in l
 
 ## Testing
 
-Place backend tests under the matching package in `src/test/java`, using the `*Tests.java` naming pattern. Run them with `./mvnw test`. The frontend currently has lint and production-build checks rather than a configured test runner; run `npm run lint` and `npm run build` from `frontend` for frontend changes. Add focused tests when introducing behavior, especially around authentication, library rules, and API boundaries.
+Place backend tests under the matching package in `src/test/java`, using the `*Tests.java` naming pattern. Run them with `./mvnw test`. The frontend currently has lint and production-build checks rather than a configured test runner. Add focused tests when introducing behavior, especially around authentication, library rules, and API boundaries.
+
+### Frontend validation preference
+
+Keep validation proportional to the change. Do not routinely run `npm run build`, `npm run lint`, or browser checks for desktop, mobile, and reduced motion after every small frontend edit (such as copy, icons, spacing, or a minor animation adjustment). Review the relevant code and diff instead. Run targeted checks when a change introduces meaningful behavior or risk, when investigating a failure, when explicitly requested, or before opening a PR as described below. Group related edits and avoid repeating checks unless new changes or failures justify them. This project preference takes precedence over optional frontend skill validation routines.
 
 ## Commits and Pull Requests
 
