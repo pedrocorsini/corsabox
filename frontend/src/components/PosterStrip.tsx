@@ -51,13 +51,28 @@ type Props = { items: CatalogItem[]; activeKey: string; onActive: (key: string) 
 export function PosterStrip({ items, activeKey, onActive, onLeave }: Props) {
   const ref = useRef<HTMLUListElement>(null)
   useDragScroll(ref)
+
+  useEffect(() => {
+    const list = ref.current
+    const active = list?.querySelector<HTMLElement>(`[data-poster-key="${CSS.escape(activeKey)}"]`)
+    if (!list || !active) return
+
+    const listRect = list.getBoundingClientRect()
+    const itemRect = active.getBoundingClientRect()
+    const target = list.scrollLeft + itemRect.left - listRect.left - (list.clientWidth - itemRect.width) / 2
+    list.scrollTo({
+      left: Math.max(0, Math.min(target, list.scrollWidth - list.clientWidth)),
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    })
+  }, [activeKey])
+
   return (
     <ul ref={ref} aria-label="Em alta agora" onPointerLeave={onLeave}
       className="flex h-full cursor-grab select-none gap-3 overflow-x-auto px-5 active:cursor-grabbing md:gap-4 md:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {items.map((it, i) => {
         const key = itemKey(it)
         return (
-          <li key={key} style={{ animationDelay: `${Math.min(i, 6) * 70}ms` }}
+          <li key={key} data-poster-key={key} style={{ animationDelay: `${Math.min(i, 6) * 70}ms` }}
               onPointerEnter={() => onActive(key)} className="fade-in aspect-[2/3] h-full shrink-0 p-1">
             <div className={`h-full w-full overflow-hidden outline-3 outline-offset-2 transition-[transform,outline-color] duration-150 active:scale-[0.97] ${
               activeKey === key ? 'outline-accent' : 'outline-transparent'} ${it.posterUrl ? 'bg-surface' : TONES[i % TONES.length]}`}>
