@@ -181,7 +181,7 @@ export default function LandingPage() {
             <div className="md:col-span-5 md:col-start-2">
               <h2 data-reveal className="text-[28px] font-semibold leading-tight md:text-[32px]">Do cadastro ao primeiro registro</h2>
               <div className="mt-12 max-w-[560px] space-y-14 text-[1.0625rem] leading-[1.6] md:text-lg">
-                <p data-reveal><strong className="font-semibold">Para começar,</strong> crie sua conta com email e senha. O login com Google chega depois.</p>
+                <p data-reveal><strong className="font-semibold">Para começar,</strong> entre com sua conta Google ou cadastre-se com email e senha. Escolha seu username e deixe o perfil com a sua cara.</p>
                 <p data-reveal><strong className="font-semibold">No catálogo,</strong> busque um título ou navegue por Em alta, Filmes, Séries e Animes. Na página de cada um você vê sinopse, elenco, direção, duração e gêneros.</p>
                 <p data-reveal><strong className="font-semibold">Daqui em diante,</strong> registre o que você viu com nota de 0 a 5, data e review, e guarde o que quer ver. Os dois ficam na sua biblioteca e você muda um título de lugar quando quiser.</p>
               </div>
@@ -196,7 +196,7 @@ export default function LandingPage() {
         <section data-field="paper" className="flex min-h-[80svh] flex-col justify-between bg-paper px-5 pb-10 pt-16 text-ink md:min-h-[90svh] md:px-8">
           <h2 data-reveal className="display-n text-[11.5vw] md:text-[9vw]">Seu diário<br />começa aqui.</h2>
           <div className="grid gap-8 md:grid-cols-12 md:items-end md:gap-x-6">
-            <p data-reveal className="text-xl md:col-span-5">Crie sua conta e comece a registrar o que você assiste.</p>
+            <p data-reveal className="text-xl md:col-span-5">Comece com Google ou email e senha. Seu próximo filme já pode virar uma página do seu diário.</p>
             <div data-reveal style={delay(1)} className="md:col-span-3 md:col-start-10 md:justify-self-end">
               <PrimaryCta onPaper className="w-full md:w-auto" />
             </div>

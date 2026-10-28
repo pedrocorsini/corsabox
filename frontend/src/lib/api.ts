@@ -34,6 +34,7 @@ export type User = {
   username: string
   email: string
   createdAt: string
+  hasPassword: boolean
 }
 
 export type RegisterData = {
@@ -84,6 +85,9 @@ export class ApiError extends Error {
 }
 
 const BASE = import.meta.env.VITE_API_URL ?? ''
+export const googleLoginUrl = `${BASE}/oauth2/authorization/google`
+export type GooglePending = { step: 'login' | 'link' | 'register'; email: string; firstName: string; lastName: string }
+export type GoogleCompletion = { username?: string; firstName?: string; lastName?: string; password?: string }
 const TOKEN_KEY = 'corsabox.token'
 
 /** O access token mais recente vive aqui, assim a renovação não dispara efeitos que dependem de `token`. */
@@ -172,6 +176,10 @@ async function request<T>(path: string, init: RequestInit = {}, token?: string |
 }
 
 export const api = {
+  googleConfig: () => request<{ enabled: boolean }>('/api/auth/google/config'),
+  googlePending: () => request<GooglePending>('/api/auth/google/pending'),
+  completeGoogle: (data: GoogleCompletion) =>
+    request<{ accessToken: string }>('/api/auth/google/complete', { method: 'POST', body: JSON.stringify(data) }),
   login: (data: { email: string; password: string }) =>
     request<{ accessToken: string }>('/api/auth/login', { method: 'POST', body: JSON.stringify(data) }),
   logout: () => request<void>('/api/auth/logout', { method: 'POST' }),

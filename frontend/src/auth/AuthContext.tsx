@@ -56,6 +56,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const { accessToken } = await api.login({ email, password })
+    acceptSession(accessToken)
+  }
+
+  const acceptSession = (accessToken: string) => {
+    setUser(null)
     tokenStore.set(accessToken)
     setToken(accessToken)
   }
@@ -69,6 +74,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ token, user, login, logout, updateProfile }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ token, user, login, acceptSession, logout, updateProfile }}>{children}</AuthContext.Provider>
   )
 }

@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router'
 import { GuestOnly, RequireAuth } from './auth/guards'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
+import GoogleLoginPage from './pages/GoogleLoginPage'
 import RegisterPage from './pages/RegisterPage'
 import CatalogPage from './pages/CatalogPage'
 import ProfilePage from './pages/ProfilePage'
@@ -15,6 +16,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      <Route path="/auth/google" element={<GoogleLoginPage />} />
       <Route path="/esqueci-senha" element={<ForgotPasswordPage />} />
       <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
       <Route element={<GuestOnly />}>

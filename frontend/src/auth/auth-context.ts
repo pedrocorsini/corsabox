@@ -5,6 +5,7 @@ export type AuthState = {
   token: string | null
   user: User | null
   login: (email: string, password: string) => Promise<void>
+  acceptSession: (accessToken: string) => void
   logout: () => void
   updateProfile: (data: UpdateProfileData) => Promise<User>
 }

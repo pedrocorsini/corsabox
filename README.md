@@ -26,7 +26,8 @@ CorsaBox is a catalog and personal diary for movies, series and anime. Browse ti
 
 ### Features
 
-- **Account and profile:** register with email verification, log in, edit your profile, change your password, and recover access.
+- **Google sign-in:** sign up or log in with Google, choose a username on your first visit, and link an existing account after confirming its current password.
+- **Account and profile:** register with email verification, edit your name and username, and manage your account. Accounts with a local password support password changes and recovery; Google-only accounts sign in without a CorsaBox password.
 - **Catalog:** browse trending titles and movies now playing in Brazil, filter movies, series and anime by genre, search the TMDB catalog, and view title, season and episode details.
 - **Where to watch:** check streaming, rental and purchase availability in Brazil.
 - **Personal library:** maintain watchlist, watched and currently watching lists.
@@ -35,7 +36,7 @@ CorsaBox is a catalog and personal diary for movies, series and anime. Browse ti
 
 ## Tech stack
 
-**Backend:** Java 25, Spring Boot 4.1, Spring Security (JWT), Spring Data JPA, PostgreSQL 17, TMDB API, springdoc-openapi, Maven.
+**Backend:** Java 25, Spring Boot 4.1, Spring Security (JWT and Google OpenID Connect), Spring Data JPA, PostgreSQL 17, TMDB API, springdoc-openapi, Maven.
 
 **Frontend:** React 19, TypeScript, Vite, Tailwind CSS 4, React Router, React Hook Form, Zod and lucide-react.
 
@@ -43,7 +44,7 @@ CorsaBox is a catalog and personal diary for movies, series and anime. Browse ti
 
 ## Architecture
 
-The frontend calls the REST API. The API separates identity, catalog and library responsibilities: identity handles accounts and authentication, catalog retrieves media data from TMDB, and library stores each user's lists and viewing history in PostgreSQL. Email adapters deliver verification and password recovery messages.
+The frontend calls the REST API. The API separates identity, catalog and library responsibilities: identity handles accounts and authentication, catalog retrieves media data from TMDB, and library stores each user's lists and viewing history in PostgreSQL. Google sign-in uses OpenID Connect validated by the backend, then opens the same CorsaBox JWT and refresh-token session used by password login. Email adapters deliver verification and password recovery messages.
 
 ```mermaid
 flowchart LR
@@ -56,6 +57,7 @@ flowchart LR
     LIB --> DB
     CAT -->|Catalog requests| TMDB[TMDB API]
     ID -->|Verification and recovery email| MAIL[Email provider]
+    ID <-->|OpenID Connect| GOOGLE[Google Identity]
 ```
 
 ### Project layout
@@ -150,6 +152,12 @@ npm run dev
 
 Open **http://localhost:5173**. In development, Vite proxies API requests to the local backend.
 
+### 5. Enable Google sign-in (optional)
+
+Create a Web application OAuth client in Google Cloud and register `http://localhost:8080/login/oauth2/code/google` as an authorized redirect URI. Set `GOOGLE_LOGIN_ENABLED=true`, `GOOGLE_CLIENT_ID`, and `GOOGLE_CLIENT_SECRET` in the backend environment before starting the API. The Google button appears on the login and registration pages when enabled.
+
+See [Google sign-in configuration](docs/google-login.md) for the complete setup, production URLs, cookie requirements, and verification steps. Keep the client secret on the backend. Google sign-in is disabled by default; email/password authentication remains available.
+
 ## Environment variables
 
 Set backend variables in the shell or hosting environment before starting the API. `TMDB_TOKEN` enables catalog requests; `APP_JWT_SECRET` and `APP_VERIFICATION_SECRET` should be set to private, strong values outside local development. Email delivery uses `MAIL_API_KEY` and `MAIL_SENDER_EMAIL`; production database credentials are provided with `SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD`. The frontend optionally reads `VITE_API_URL` from `frontend/.env.local` to set the API base URL; leave it unset for the local Vite proxy.
@@ -159,10 +167,14 @@ Additional deployment settings:
 |---|---|
 | `SPRING_PROFILES_ACTIVE` | Set to `prod` to use Brevo and production database settings and disable Docker Compose integration. |
 | `SPRING_DATASOURCE_URL` | Override the JDBC URL; the `prod` profile otherwise uses the hosted URL in `application-prod.properties`. |
-| `APP_FRONTEND_URL` | Frontend URL for password reset links; defaults to `http://localhost:5173`. |
+| `APP_FRONTEND_URL` | Exact frontend origin for password reset links, Google sign-in returns and completion requests; defaults to `http://localhost:5173`. |
 | `APP_CORS_ALLOWED_ORIGINS` | Comma-separated allowed frontend origins; defaults to `http://localhost:5173`. |
 | `PORT` | API port; defaults to `8080`. |
 | `REFRESH_COOKIE_SECURE`, `REFRESH_COOKIE_SAMESITE` | Cookie settings; defaults are `false` and `Lax`. The `prod` profile sets secure cookies to `true`. |
+| `GOOGLE_LOGIN_ENABLED` | Enable Google sign-in with `true`; defaults to `false`. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Web application OAuth client credentials, configured only on the backend. |
+| `GOOGLE_REDIRECT_URI` | Exact authorized Google callback URL; defaults to `http://localhost:8080/login/oauth2/code/google`. Set the public HTTPS backend URL in production. |
+| `GOOGLE_SESSION_SAMESITE` | Production OAuth session cookie SameSite policy; defaults to `lax`. See the Google setup guide for deployments across different sites. |
 
 `VITE_API_URL` is embedded at build time. Never put secrets in frontend environment variables.
 
