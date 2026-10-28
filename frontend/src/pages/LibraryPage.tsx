@@ -3,6 +3,7 @@ import { Loader2, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { AppHeader } from '../components/AppHeader'
 import { Poster } from '../components/Poster'
+import { DropdownSelect } from '../components/DropdownSelect'
 import { RatingMeter } from '../components/Rating'
 import { Button } from '../components/ui'
 import type { LibraryEntry, LibraryStatus } from '../lib/api'
@@ -146,17 +147,18 @@ export default function LibraryPage() {
         </div>
 
         <div role="tabpanel" className="mt-8">
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <label className="flex items-center gap-2 text-sm text-muted">
+          <div className="relative z-30 mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm text-muted">
               <span>Ordenar</span>
-              <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}
-                aria-label="Ordenar títulos"
-                className="h-9 bg-surface px-3 text-sm text-white outline-none focus:outline-accent">
-                <option value="recent">Mais recentes</option>
-                <option value="oldest">Mais antigos</option>
-                <option value="title">A a Z</option>
-              </select>
-            </label>
+              <div className="w-44">
+                <DropdownSelect label="Ordenar títulos" value={sort} onChange={setSort}
+                  options={[
+                    { id: 'recent', label: 'Mais recentes' },
+                    { id: 'oldest', label: 'Mais antigos' },
+                    { id: 'title', label: 'A a Z' },
+                  ]} />
+              </div>
+            </div>
             <label className="relative ml-auto block w-full sm:w-56">
               <Search size={16} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
               <input type="search" value={query} onChange={(e) => setQuery(e.target.value)}
