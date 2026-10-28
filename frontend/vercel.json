@@ -1,11 +1,19 @@
 {
   "rewrites": [
     {
+      "source": "/oauth2/authorization/google",
+      "destination": "https://corsabox.onrender.com/oauth2/authorization/google"
+    },
+    {
+      "source": "/login/oauth2/code/google",
+      "destination": "https://corsabox.onrender.com/login/oauth2/code/google"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://corsabox.onrender.com/api/:path*"
     },
     {
-      "source": "/((?!api/|robots\\.txt|sitemap\\.xml|og\\.png|favicon\\.svg|assets/).*)",
+      "source": "/((?!api/|oauth2/|login/oauth2/|robots\\.txt|sitemap\\.xml|og\\.png|favicon\\.svg|google\\.svg|assets/).*)",
       "destination": "/"
     }
   ],

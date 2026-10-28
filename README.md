@@ -173,7 +173,7 @@ Additional deployment settings:
 | `REFRESH_COOKIE_SECURE`, `REFRESH_COOKIE_SAMESITE` | Cookie settings; defaults are `false` and `Lax`. The `prod` profile sets secure cookies to `true`. |
 | `GOOGLE_LOGIN_ENABLED` | Enable Google sign-in with `true`; defaults to `false`. |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Web application OAuth client credentials, configured only on the backend. |
-| `GOOGLE_REDIRECT_URI` | Exact authorized Google callback URL; defaults to `http://localhost:8080/login/oauth2/code/google`. Set the public HTTPS backend URL in production. |
+| `GOOGLE_REDIRECT_URI` | Exact authorized Google callback URL; defaults to `http://localhost:8080/login/oauth2/code/google`. With the Vercel proxy, use the frontend HTTPS origin plus `/login/oauth2/code/google` so OAuth keeps the same session cookie. |
 | `GOOGLE_SESSION_SAMESITE` | Production OAuth session cookie SameSite policy; defaults to `lax`. See the Google setup guide for deployments across different sites. |
 
 `VITE_API_URL` is embedded at build time. Never put secrets in frontend environment variables.

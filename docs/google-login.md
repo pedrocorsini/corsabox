@@ -23,7 +23,19 @@ Não coloque o segredo em variáveis `VITE_*`, no repositório ou em URLs. Sem c
 
 ## Produção
 
-Use `GOOGLE_REDIRECT_URI` com a URL pública HTTPS do **backend**, terminando em `/login/oauth2/code/google`, e cadastre a mesma URI no Google. Configure `APP_FRONTEND_URL` com a origem HTTPS exata do frontend, sem caminho, e autorize essa origem em `APP_CORS_ALLOWED_ORIGINS`.
+No deploy Vercel + Render deste projeto, mantenha `VITE_API_URL` sem definição para usar o proxy da Vercel. O `frontend/vercel.json` encaminha `/api/*`, `/oauth2/authorization/google` e `/login/oauth2/code/google` para o Render. O início, o retorno e a conclusão do OAuth devem passar pelo mesmo domínio público para compartilhar o cookie de sessão.
+
+Para o domínio `https://www.corsabox.app`, configure no backend:
+
+```text
+GOOGLE_REDIRECT_URI=https://www.corsabox.app/login/oauth2/code/google
+APP_FRONTEND_URL=https://www.corsabox.app
+APP_CORS_ALLOWED_ORIGINS=https://www.corsabox.app
+```
+
+Cadastre exatamente a mesma `GOOGLE_REDIRECT_URI` nas URIs de redirecionamento autorizadas do cliente no Google Cloud. Use a origem canônica que realmente serve o frontend (incluindo `www`, se aplicável), sem redirecionar entre domínios durante o fluxo. Faça novo deploy do frontend após alterar as rotas ou `VITE_API_URL`, pois essa variável é incorporada na build.
+
+Não misture início pelo domínio da Vercel com callback em `corsabox.onrender.com`: o cookie criado no primeiro domínio não será enviado ao segundo. A URL direta do backend só é adequada quando o início e todas as chamadas da sessão OAuth também usam essa origem, com as configurações de cookies/CORS correspondentes.
 
 O Spring guarda o estado/nonce e a identidade pendente em uma sessão temporária com cookie HttpOnly, válida por dez minutos. Ela não autentica chamadas à API. O perfil de produção exige cookie Secure. Prefira frontend e backend no mesmo site, por exemplo `www.corsabox.app` e `api.corsabox.app`, ou um proxy sob a mesma origem. Se estiverem em sites diferentes, `GOOGLE_SESSION_SAMESITE=none` é necessário; navegadores que bloqueiam cookies de terceiros ainda podem impedir o fluxo. O refresh cookie existente também precisa de configuração compatível com a topologia.
 
