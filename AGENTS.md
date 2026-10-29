@@ -20,13 +20,23 @@ Follow nearby code conventions. Use standard Java formatting, package names in l
 
 Place backend tests under the matching package in `src/test/java`, using the `*Tests.java` naming pattern. Run them with `./mvnw test`. The frontend currently has lint and production-build checks rather than a configured test runner. Add focused tests when introducing behavior, especially around authentication, library rules, and API boundaries.
 
-### Frontend validation preference
+### Project-wide validation policy
 
-Keep validation proportional to the change. Do not routinely run `npm run build`, `npm run lint`, or browser checks for desktop, mobile, and reduced motion after every small frontend edit (such as copy, icons, spacing, or a minor animation adjustment). Review the relevant code and diff instead. Run targeted checks when a change introduces meaningful behavior or risk, when investigating a failure, when explicitly requested, or before opening a PR as described below. Group related edits and avoid repeating checks unless new changes or failures justify them. This project preference takes precedence over optional frontend skill validation routines.
+Keep validation proportional to the change across the entire project, including backend, frontend, configuration, and documentation.
+
+- For low-risk changes such as copy, icons, typography, spacing, minor animation adjustments, or documentation, review the relevant code and diff. Do not routinely run builds, lint, test suites, or browser checks.
+- For behavior changes, run the smallest focused check that proves the affected behavior. Broaden validation only when the impact warrants it, a failure needs investigation, or the user explicitly requests it. Preserve necessary checks for authentication, authorization, database integrity, and other sensitive boundaries.
+- Group related edits before validating. Run full builds, full lint, and broader test suites during preparation for a PR or deployment, according to the affected areas and risk, rather than after each edit.
+- Reuse successful validation results when the relevant code and dependencies have not changed. Do not repeat checks merely because a commit, PR, or deployment is next; repeat them only when subsequent changes, failures, or unresolved concerns justify it.
+- Browser checks should cover the affected interaction and viewport. Do not routinely check desktop, tablet, mobile, and reduced motion for every frontend change.
+
+This project policy takes precedence over optional skill validation routines. Report briefly what was checked and any material limitation; do not expand validation beyond the task's needs.
 
 ## Commits and Pull Requests
 
-Recent history uses short, imperative Conventional Commit-style subjects, such as `feat: add library controls` and `fix: align catalog controls`. Use prefixes like `feat`, `fix`, or `hotfix(scope)`. Pull requests should explain the change and its reason, link related issues when applicable, and include screenshots for visible frontend changes. Before opening a PR, run backend tests and the frontend lint/build checks relevant to your changes.
+Finish the requested changes and their proportional validation, then present the result to the user. Create commits and open pull requests only after the user's explicit confirmation of that completed result. A request to implement a feature, fix a bug, or make a hotfix does not authorize a commit or PR. Approval for a previous change does not authorize commits or PRs for subsequent work. Do not push, merge, or deploy unless the user has authorized those actions for the current completed change.
+
+Recent history uses short, imperative Conventional Commit-style subjects, such as `feat: add library controls` and `fix: align catalog controls`. Use prefixes like `feat`, `fix`, or `hotfix(scope)`. Pull requests should explain the change and its reason, link related issues when applicable, and include screenshots for visible frontend changes. Before opening a PR, ensure the backend tests and frontend lint/build checks relevant to the change have passed, reusing valid earlier results under the validation policy above.
 
 ## Configuration and Secrets
 
