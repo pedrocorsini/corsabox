@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PathVariable;
+import com.corsini.corsabox.identity.application.service.PeopleService;
+import com.corsini.corsabox.identity.api.response.PersonResponse;
 
 import com.corsini.corsabox.identity.api.request.ChangePasswordRequest;
 import com.corsini.corsabox.identity.api.request.UpdateProfileRequest;
@@ -36,14 +39,32 @@ public class UserController {
     private final GetCurrentUserUseCase getCurrentUser;
     private final UpdateProfileUseCase updateProfile;
     private final ChangePasswordUseCase changePassword;
+    private final PeopleService people;
 
 
     public UserController(ListUserUseCase listUsers, GetCurrentUserUseCase getCurrentUser,
-                          UpdateProfileUseCase updateProfile, ChangePasswordUseCase changePassword) {
+                          UpdateProfileUseCase updateProfile, ChangePasswordUseCase changePassword, PeopleService people) {
         this.listUsers = listUsers;
         this.getCurrentUser = getCurrentUser;
         this.updateProfile = updateProfile;
         this.changePassword = changePassword;
+        this.people = people;
+    }
+
+    @GetMapping("/search")
+    public Page<PersonResponse> search(@AuthenticationPrincipal Jwt jwt, @RequestParam(defaultValue = "") String q,
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        return people.search(UUID.fromString(jwt.getSubject()), q, page, size).map(PersonResponse::from);
+    }
+
+    @GetMapping("/{userId}/profile")
+    public PersonResponse profile(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID userId) {
+        return PersonResponse.from(people.profile(UUID.fromString(jwt.getSubject()), userId));
+    }
+
+    @GetMapping("/by-username/{username}/profile")
+    public PersonResponse profileByUsername(@AuthenticationPrincipal Jwt jwt, @PathVariable String username) {
+        return PersonResponse.from(people.profileByUsername(UUID.fromString(jwt.getSubject()), username));
     }
 
     @GetMapping

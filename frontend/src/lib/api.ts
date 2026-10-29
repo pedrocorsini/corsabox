@@ -22,6 +22,8 @@ export type LibraryEntry = {
   rating?: number
   watchedOn?: string
   review?: string
+  publishedAt?: string
+  commentsEnabled: boolean
   addedAt: string
   updatedAt: string
   progress?: { season: number; episode: number }
@@ -54,7 +56,28 @@ export type EpisodeLog = {
   updatedAt: string
 }
 
-export type WatchedData = { rating: number | null; watchedOn: string | null; review: string | null }
+export type WatchedData = { rating: number | null; watchedOn: string | null; review: string | null; publishToFeed?: boolean; commentsEnabled?: boolean }
+export type Reaction = 'LIKE' | 'DISLIKE'
+export type ReactionSummary = { likes: number; dislikes: number; myReaction: Reaction | null }
+export type FeedComment = {
+  id: string
+  author: Pick<User, 'id' | 'username'>
+  text: string
+  createdAt: string
+  reactions: ReactionSummary
+}
+export type FeedReview = {
+  author: Pick<User, 'id' | 'username' | 'firstName' | 'lastName'>
+  entry: LibraryEntry
+  reactions: ReactionSummary
+  commentCount: number
+}
+export type PublicUser = Pick<User, 'id' | 'username' | 'firstName' | 'lastName' | 'createdAt'>
+export type Relationship = 'SELF' | 'NONE' | 'REQUEST_SENT' | 'REQUEST_RECEIVED' | 'FRIENDS'
+export type Favorite = { id: string; media: CatalogItem }
+export type ProfileCustomization = { bio: string; photo: string; favorites: Favorite[] }
+export type Person = { user: PublicUser; relationship: Relationship }
+export type FriendList = 'friends' | 'received' | 'sent'
 export type Page<T> = {
   content: T[]
   last?: boolean
@@ -172,10 +195,53 @@ async function request<T>(path: string, init: RequestInit = {}, token?: string |
   }
   // 202 e 204 chegam sem corpo
   const text = await res.text()
+  if (path.startsWith('/api/library/') && init.method && init.method !== 'GET') {
+    window.dispatchEvent(new Event('corsabox:library-changed'))
+  }
   return (text ? JSON.parse(text) : undefined) as T
 }
 
 export const api = {
+  feed: (token: string, page = 0, authorId?: string) =>
+    request<Page<FeedReview>>(`/api/feed?page=${page}&size=20${authorId ? `&authorId=${encodeURIComponent(authorId)}` : ''}`, {}, token),
+  profiles: {
+    candidates: (token: string, kind: 'movie' | 'tv' | 'anime', q: string, page = 0) =>
+      request<Page<LibraryEntry>>(`/api/users/me/favorite-candidates?kind=${kind}&q=${encodeURIComponent(q)}&page=${page}&size=20`, {}, token),
+    get: (token: string, id: string) => request<ProfileCustomization>(`/api/users/${encodeURIComponent(id)}/customization`, {}, token),
+    savePresentation: (token: string, data: { bio: string; photo: string }) =>
+      request<ProfileCustomization>('/api/users/me/presentation', { method: 'PUT', body: JSON.stringify(data) }, token),
+    saveFavorites: (token: string, favorites: { format: 'movie' | 'tv'; id: number }[]) =>
+      request<ProfileCustomization>('/api/users/me/catalog-favorites', { method: 'PUT', body: JSON.stringify({ favorites }) }, token),
+  },
+  people: {
+    byUsername: (token: string, username: string) => request<Person>(`/api/users/by-username/${encodeURIComponent(username)}/profile`, {}, token),
+    profile: (token: string, userId: string) => request<Person>(`/api/users/${encodeURIComponent(userId)}/profile`, {}, token),
+    search: (token: string, q: string, page = 0) =>
+      request<Page<Person>>(`/api/users/search?q=${encodeURIComponent(q)}&page=${page}&size=20`, {}, token),
+    list: (token: string, list: FriendList, page = 0, size = 20) => request<Page<Person>>(
+      list === 'friends' ? `/api/friends?page=${page}&size=${size}`
+        : `/api/friends/requests?direction=${list === 'received' ? 'RECEIVED' : 'SENT'}&page=${page}&size=${size}`, {}, token),
+    request: (token: string, userId: string) =>
+      request<{ relationship: Relationship }>(`/api/friends/${encodeURIComponent(userId)}`, { method: 'POST' }, token),
+    accept: (token: string, userId: string) =>
+      request<{ relationship: Relationship }>(`/api/friends/${encodeURIComponent(userId)}/accept`, { method: 'POST' }, token),
+    remove: (token: string, userId: string) =>
+      request<{ relationship: Relationship }>(`/api/friends/${encodeURIComponent(userId)}`, { method: 'DELETE' }, token),
+  },
+  feedInteractions: {
+    comments: (token: string, reviewId: string, page = 0) =>
+      request<Page<FeedComment>>(`/api/feed/${reviewId}/comments?page=${page}&size=20`, {}, token),
+    addComment: (token: string, reviewId: string, text: string) =>
+      request<FeedComment>(`/api/feed/${reviewId}/comments`, { method: 'POST', body: JSON.stringify({ text }) }, token),
+    deleteComment: (token: string, reviewId: string, commentId: string) =>
+      request<void>(`/api/feed/${reviewId}/comments/${commentId}`, { method: 'DELETE' }, token),
+    react: (token: string, reviewId: string, reaction: Reaction | null, commentId?: string) => {
+      const path = `/api/feed/${reviewId}${commentId ? `/comments/${commentId}` : ''}/reaction`
+      return request<ReactionSummary>(path, reaction
+        ? { method: 'PUT', body: JSON.stringify({ reaction }) }
+        : { method: 'DELETE' }, token)
+    },
+  },
   googleConfig: () => request<{ enabled: boolean }>('/api/auth/google/config'),
   googlePending: () => request<GooglePending>('/api/auth/google/pending'),
   completeGoogle: (data: GoogleCompletion) =>

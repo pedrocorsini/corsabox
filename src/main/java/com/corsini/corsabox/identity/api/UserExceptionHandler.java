@@ -21,10 +21,22 @@ import com.corsini.corsabox.identity.domain.exception.UserNotFoundException;
 import com.corsini.corsabox.identity.domain.exception.UsernameAlreadyInUseException;
 import com.corsini.corsabox.identity.domain.exception.VerificationCodeRecentlySentException;
 import com.corsini.corsabox.identity.domain.exception.WrongCurrentPasswordException;
+import com.corsini.corsabox.identity.domain.exception.FriendshipException;
 
 @Order(Ordered.LOWEST_PRECEDENCE)
 @RestControllerAdvice
 public class UserExceptionHandler extends ResponseEntityExceptionHandler {
+
+    @ExceptionHandler(FriendshipException.class)
+    ProblemDetail handleFriendship(FriendshipException ex) {
+        var status = switch (ex.getReason()) {
+            case SELF_REQUEST -> HttpStatus.BAD_REQUEST;
+            case INCOMING_REQUEST -> HttpStatus.CONFLICT;
+            case NOT_RECIPIENT -> HttpStatus.FORBIDDEN;
+            case NOT_FOUND -> HttpStatus.NOT_FOUND;
+        };
+        return ProblemDetail.forStatusAndDetail(status, ex.getMessage());
+    }
 
     @ExceptionHandler({ EmailAlreadyInUseException.class, UsernameAlreadyInUseException.class })
     ProblemDetail handleConflict(RuntimeException ex) {
@@ -34,7 +46,7 @@ public class UserExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     ProblemDetail handleIntegrity(DataIntegrityViolationException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
-                "Email or username already in use");
+                "Não foi possível salvar porque os dados entram em conflito. Atualize a página e tente novamente.");
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

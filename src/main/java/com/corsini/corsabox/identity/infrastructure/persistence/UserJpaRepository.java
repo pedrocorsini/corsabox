@@ -14,6 +14,9 @@ import com.corsini.corsabox.identity.domain.UserRepository;
 
 @Repository 
 public class UserJpaRepository implements UserRepository {
+    public Optional<User> findByUsername(String username) {
+        return springDataUserRepository.findByUsernameIgnoreCase(username).map(UserJpaRepository::toDomain);
+    }
 
     private final SpringDataUserRepository springDataUserRepository;
 
@@ -35,7 +38,7 @@ public class UserJpaRepository implements UserRepository {
         return entity;
     }
 
-    private static User toDomain(UserEntity entity){
+    static User toDomain(UserEntity entity){
         return User.restore(
             new UserId(entity.getId()), 
             entity.getEmail(),
@@ -75,5 +78,12 @@ public class UserJpaRepository implements UserRepository {
                 pageable.getPageSize(),
                 Sort.by(UserEntity::getCreatedOn).descending());
         return springDataUserRepository.findAll(sorted).map(UserJpaRepository::toDomain);
+    }
+
+    @Override
+    public Page<User> search(String query, UserId viewerId, Pageable pageable) {
+        var pattern = "%" + query.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+        var sorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("username", "id"));
+        return springDataUserRepository.search(pattern, viewerId.id(), sorted).map(UserJpaRepository::toDomain);
     }
 }

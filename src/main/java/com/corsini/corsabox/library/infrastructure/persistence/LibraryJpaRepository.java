@@ -17,6 +17,7 @@ import com.corsini.corsabox.library.domain.LibraryEntry;
 import com.corsini.corsabox.library.domain.LibraryRepository;
 import com.corsini.corsabox.library.domain.MediaSnapshot;
 import com.corsini.corsabox.library.domain.Rating;
+import com.corsini.corsabox.library.domain.PublishedReview;
 
 @Repository
 public class LibraryJpaRepository implements LibraryRepository {
@@ -25,6 +26,18 @@ public class LibraryJpaRepository implements LibraryRepository {
 
     public LibraryJpaRepository(SpringDataLibraryEntryRepository repo) {
         this.repo = repo;
+    }
+
+    @Override
+    public List<LibraryEntry> findWatchedByIds(UUID userId, List<UUID> ids) {
+        if (ids.isEmpty()) return List.of();
+        return repo.findByUserIdAndStatusAndIdIn(userId, EntryStatus.WATCHED, ids).stream()
+                .map(LibraryJpaRepository::toDomain).toList();
+    }
+
+    @Override
+    public Page<LibraryEntry> searchWatched(UUID userId, com.corsini.corsabox.catalog.domain.MediaKind kind, String pattern, Pageable pageable) {
+        return repo.searchWatched(userId, kind, pattern, pageable).map(LibraryJpaRepository::toDomain);
     }
 
     private static LibraryEntryEntity toEntity(LibraryEntry e) {
@@ -43,6 +56,8 @@ public class LibraryJpaRepository implements LibraryRepository {
         entity.setRatingHalves(e.getRating() == null ? null : e.getRating().halves());
         entity.setWatchedOn(e.getWatchedOn());
         entity.setReview(e.getReview());
+        entity.setPublishedAt(e.getPublishedAt());
+        entity.setCommentsEnabled(e.isCommentsEnabled());
         entity.setCreatedAt(e.getCreatedAt());
         entity.setUpdatedAt(e.getUpdatedAt());
         entity.setReleaseDate(m.releaseDate());
@@ -55,9 +70,11 @@ public class LibraryJpaRepository implements LibraryRepository {
         var media = new MediaSnapshot(e.getTmdbId(), e.getFormat(), e.getKind(), e.getTitle(),
             e.getReleaseYear(), e.getReleaseDate(), e.getRuntimeMinutes(), splitGenres(e.getGenres()),
             e.getPosterUrl(), e.getBackdropUrl());
-        return LibraryEntry.restore(e.getId(), new UserId(e.getUserId()), media, e.getStatus(),
+        var entry = LibraryEntry.restore(e.getId(), new UserId(e.getUserId()), media, e.getStatus(),
                 e.getRatingHalves() == null ? null : new Rating(e.getRatingHalves()),
                 e.getWatchedOn(), e.getReview(), e.getCreatedAt(), e.getUpdatedAt());
+        entry.restorePublication(e.getPublishedAt(), e.isCommentsEnabled());
+        return entry;
     }
     
     private static String joinGenres(List<String> genres) {
@@ -92,6 +109,17 @@ public class LibraryJpaRepository implements LibraryRepository {
                 : Sort.by(Sort.Order.desc("createdAt"));
         var sorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
         return repo.findByUserIdAndStatus(userId.id(), status, sorted).map(LibraryJpaRepository::toDomain);
+    }
+
+    @Override
+    public Page<PublishedReview> findPublished(Pageable pageable) {
+        return findPublishedByAuthor(null, pageable);
+    }
+
+    @Override
+    public Page<PublishedReview> findPublishedByAuthor(UUID authorId, Pageable pageable) {
+        return repo.findPublished(authorId, pageable).map(row -> new PublishedReview(
+                toDomain(row.getEntry()), row.getAuthorId(), row.getUsername(), row.getFirstName(), row.getLastName()));
     }
 
     @Override

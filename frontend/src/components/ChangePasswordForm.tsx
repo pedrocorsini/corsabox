@@ -74,6 +74,7 @@ export function ChangePasswordForm() {
         error={errors.currentPassword?.message} {...register('currentPassword')} />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field id="newPassword" label="Nova senha" type="password" autoComplete="new-password"
+          hint="De 8 a 72 caracteres. Diferente da senha atual."
           error={errors.newPassword?.message} {...register('newPassword')} />
         <Field id="confirmNewPassword" label="Confirmar nova senha" type="password" autoComplete="new-password"
           error={errors.confirmPassword?.message} {...register('confirmPassword')} />

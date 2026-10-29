@@ -10,6 +10,9 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import LibraryPage from './pages/LibraryPage'
 import TitlePage from './pages/TitlePage'
+import FeedPage from './pages/FeedPage'
+import FriendsPage from './pages/FriendsPage'
+import PublicProfilePage from './pages/PublicProfilePage'
 
 
 export default function App() {
@@ -25,6 +28,9 @@ export default function App() {
       </Route>
       <Route element={<RequireAuth />}>
         <Route path="/catalogo" element={<CatalogPage />} />
+        <Route path="/feed" element={<FeedPage />} />
+        <Route path="/amigos" element={<FriendsPage />} />
+        <Route path="/perfil/:username" element={<PublicProfilePage />} />
           <Route path="/titulo/:format/:id" element={<TitlePage />} />
           <Route path="/biblioteca" element={<LibraryPage />} />
         <Route path="/perfil" element={<ProfilePage />} />

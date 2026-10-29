@@ -10,12 +10,23 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.corsini.corsabox.library.domain.exception.AlreadyWatchedException;
 import com.corsini.corsabox.library.domain.exception.EntryNotFoundException;
+import com.corsini.corsabox.library.domain.exception.ReviewInteractionException;
 
 // basePackages limita este handler aos controllers do library, e a ordem alta
 // garante que ele vença o UserExceptionHandler para DataIntegrityViolationException.
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice(basePackages = "com.corsini.corsabox.library")
 public class LibraryExceptionHandler {
+
+    @ExceptionHandler(ReviewInteractionException.class)
+    ProblemDetail handleInteraction(ReviewInteractionException ex) {
+        var status = switch (ex.getReason()) {
+            case NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case COMMENTS_CLOSED -> HttpStatus.CONFLICT;
+            case NOT_OWNER -> HttpStatus.FORBIDDEN;
+        };
+        return ProblemDetail.forStatusAndDetail(status, ex.getMessage());
+    }
 
     @ExceptionHandler(EntryNotFoundException.class)
     ProblemDetail handleNotFound(EntryNotFoundException ex) {

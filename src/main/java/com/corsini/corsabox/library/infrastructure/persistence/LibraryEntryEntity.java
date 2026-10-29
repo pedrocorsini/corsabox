@@ -24,7 +24,8 @@ import lombok.Setter;
 @Table(name = "library_entries",
         uniqueConstraints = @UniqueConstraint(name = "uk_library_user_media",
                 columnNames = {"userId", "tmdbId", "format"}),
-        indexes = @Index(name = "idx_library_user_status", columnList = "userId,status"))
+        indexes = {@Index(name = "idx_library_user_status", columnList = "userId,status"),
+                @Index(name = "idx_library_feed", columnList = "publishedAt DESC,id DESC")})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -70,6 +71,11 @@ public class LibraryEntryEntity {
 
         @Column(length = 5000)
         private String review;
+
+        private Instant publishedAt;
+
+        @Column(nullable = false, columnDefinition = "boolean default true")
+        private boolean commentsEnabled = true;
 
         @Column(nullable = false, updatable = false)
         private Instant createdAt;

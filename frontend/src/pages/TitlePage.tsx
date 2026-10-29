@@ -96,7 +96,7 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
         if (cancelled) return
         setItem(details)
         setEntry(current)
-        setFormOpen(wantsForm && current?.status !== 'watched')
+        setFormOpen(wantsForm)
       })
       .catch((e) => {
         if (!cancelled) setFailure(e instanceof ApiError && e.status === 404 ? 'missing' : 'network')
@@ -270,7 +270,9 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
                   <section key="form" className="notice-in mt-8 bg-surface p-5 md:p-6">
                     <h2 className="mb-6 text-xl font-semibold">{watched ? 'Editar registro' : 'Registrar como assistido'}</h2>
                     <WatchedForm
-                      initial={{ rating: entry?.rating ?? null, watchedOn: entry?.watchedOn ?? '', review: entry?.review ?? '' }}
+                      allowPublication
+                      initial={{ rating: entry?.rating ?? null, watchedOn: entry?.watchedOn ?? '', review: entry?.review ?? '',
+                        publishToFeed: !!entry?.publishedAt, commentsEnabled: entry?.commentsEnabled ?? true }}
                       submitLabel="Salvar"
                       busy={busy === 'save'}
                       onSubmit={save}
@@ -282,6 +284,7 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
                 {watched && !formOpen && entry && (
                   <section className="mt-10 bg-surface p-5 md:p-6">
                     <h2 className="text-xl font-semibold">Seu registro</h2>
+                    <p className="mt-3 text-sm text-muted">{entry.publishedAt ? 'Review publicada no feed' : 'Registro privado'}</p>
                     <dl className="mt-5 space-y-5 text-[15px]">
                       <div>
                         <dt className="text-muted">Nota</dt>

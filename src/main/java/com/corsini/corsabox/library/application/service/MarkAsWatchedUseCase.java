@@ -40,14 +40,22 @@ public class MarkAsWatchedUseCase {
         if (existing.isPresent()) {
             var entry = existing.get();
             entry.markWatched(rating, command.watchedOn(), command.review());
+            applyPublication(entry, command);
             saved = repository.save(entry);
         } else {
             var media = mediaLookup.find(command.format(), command.tmdbId());
-            saved = repository.save(LibraryEntry.watched(uid, media, rating, command.watchedOn(), command.review()));
+            var entry = LibraryEntry.watched(uid, media, rating, command.watchedOn(), command.review());
+            applyPublication(entry, command);
+            saved = repository.save(entry);
         }
 
         if (command.format() == MediaFormat.TV && !alreadyWatched) fillEpisodes(saved);
         return saved;
+    }
+
+    private void applyPublication(LibraryEntry entry, MarkWatchedCommand command) {
+        entry.setPublication(command.publishToFeed() == null ? entry.getPublishedAt() != null : command.publishToFeed(),
+                command.commentsEnabled() == null ? entry.isCommentsEnabled() : command.commentsEnabled());
     }
 
     // Se a TMDB falhar, a série continua marcada como assistida e os episódios podem ser marcados depois.

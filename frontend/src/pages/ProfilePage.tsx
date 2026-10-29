@@ -1,9 +1,12 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
+import { ArrowUpRight, LogOut } from 'lucide-react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useAuth } from '../auth/useAuth'
+import { ProfileCustomizationEditor } from '../components/ProfileCustomizationEditor'
+import { profilePath } from '../lib/people'
 import { AppHeader } from '../components/AppHeader'
 import { ChangePasswordForm } from '../components/ChangePasswordForm'
 import { ConfirmDialog } from '../components/ConfirmDialog'
@@ -43,65 +46,53 @@ export default function ProfilePage() {
   useScrollEffects()
   if (!user) return null
 
-  const since = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date(user.createdAt))
-
   return (
     <div className="min-h-svh bg-bg text-white">
       <AppHeader />
 
       <main className="mx-auto max-w-6xl px-5 pb-24 pt-12 md:px-8">
-        <h1 data-reveal className="text-4xl font-semibold md:text-5xl">Perfil</h1>
-        <p data-reveal style={{ transitionDelay: '80ms' }} className="mt-3 max-w-[52ch] text-lg text-muted">
-          Atualize seus dados. As mudanças valem na hora, em todo o app.
-        </p>
-
-        <div className="mt-12 grid gap-12 md:grid-cols-12 md:gap-x-6">
-          <aside className="md:col-span-4">
-            <div className="bg-surface p-6">
-              <div aria-hidden="true" className="wide flex size-20 items-center justify-center bg-accent text-4xl text-ink">
-                {user.firstName.charAt(0).toUpperCase()}
-              </div>
-              <p className="mt-6 text-xl font-semibold">{user.firstName} {user.lastName}</p>
-              <p className="text-muted">@{user.username}</p>
-              <dl className="mt-6 space-y-4 text-[15px]">
-                <div>
-                  <dt className="text-muted">Email</dt>
-                  <dd className="break-all">{user.email}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted">Na CorsaBox desde</dt>
-                  <dd>{since}</dd>
-                </div>
-              </dl>
-            </div>
-            <button type="button" onClick={() => setConfirmingLogout(true)}
-              className={`mt-6 hidden h-14 w-full border px-5 transition-colors active:scale-[0.99] md:block ${confirmingLogout ? 'border-red-400/50 bg-red-500/15 text-red-200' : 'border-white/15 text-muted hover:border-red-400/50 hover:bg-red-500/15 hover:text-red-200 active:border-red-400/50 active:bg-red-500/15 active:text-red-200'}`}>
-              Sair da conta
-            </button>
-          </aside>
-
-          <div className="space-y-16 md:col-span-7 md:col-start-6">
-            <section data-reveal>
-              <h2 className="text-xl font-semibold">Dados pessoais</h2>
-              <ProfileForm user={user} />
-            </section>
-
-            <section data-reveal>
-              <h2 className="text-xl font-semibold">{user.hasPassword ? 'Senha' : 'Acesso à conta'}</h2>
-              {user.hasPassword ? <>
-                <p className="mt-2 text-muted">Use uma senha que você não usa em outros sites.</p>
-                <ChangePasswordForm />
-              </> : <p className="mt-2 text-muted">Você entra com o Google. Sua conta não tem uma senha do CorsaBox.</p>}
-            </section>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 data-reveal className="text-3xl font-semibold tracking-tight sm:text-4xl">Minha conta</h1>
+            <p className="mt-3 text-muted">Atualize sua foto, bio e dados pessoais.</p>
           </div>
-
-          <div className="md:hidden">
-            <button type="button" onClick={() => setConfirmingLogout(true)}
-              className={`h-14 w-full border px-5 transition-colors active:scale-[0.99] ${confirmingLogout ? 'border-red-400/50 bg-red-500/15 text-red-200' : 'border-white/15 text-muted hover:border-red-400/50 hover:bg-red-500/15 hover:text-red-200 active:border-red-400/50 active:bg-red-500/15 active:text-red-200'}`}>
-              Sair da conta
-            </button>
-          </div>
+          <Link to={profilePath(user.username)} className="group inline-flex min-h-12 items-center justify-center gap-2 self-start bg-surface px-5 text-sm font-medium text-white transition-colors hover:bg-line focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:active:scale-[0.97]">
+            Ver perfil público <ArrowUpRight size={16} aria-hidden="true" className="transition-transform motion-safe:group-hover:-translate-y-0.5 motion-safe:group-hover:translate-x-0.5" />
+          </Link>
         </div>
+
+        <div className="mt-8 grid items-start gap-10 lg:grid-cols-2 lg:gap-12">
+          <div className="min-w-0 bg-surface p-5 sm:p-6">
+            <ProfileCustomizationEditor />
+          </div>
+          <section aria-labelledby="personal-details" className="min-w-0">
+            <h2 id="personal-details" className="text-xl font-semibold">Dados pessoais</h2>
+            <p className="mt-2 text-muted">Seu nome e sua identificação na CorsaBox.</p>
+            <ProfileForm user={user} />
+          </section>
+        </div>
+
+        <section className="mt-12" aria-labelledby="account-access">
+          <h2 id="account-access" className="text-xl font-semibold">Acesso e sessão</h2>
+          <div className="mt-6 grid items-start gap-8 lg:grid-cols-2 lg:gap-12">
+            <div className="min-w-0">
+              <h3 className="font-semibold">{user.hasPassword ? 'Alterar senha' : 'Entrada com Google'}</h3>
+              {user.hasPassword ? <>
+                <p className="mt-2 text-sm text-muted">Confirme sua senha atual para escolher uma nova.</p>
+                <ChangePasswordForm />
+              </> : <p className="mt-2 max-w-prose text-sm leading-relaxed text-muted">Você usa sua conta Google para entrar. A senha é gerenciada pelo Google.</p>}
+            </div>
+            <div className="min-w-0 bg-surface p-5 sm:p-6">
+              <h3 className="font-semibold">Sessão atual</h3>
+              <p className="mt-2 break-all text-sm text-muted">{user.email}</p>
+              <p className="mt-3 text-sm leading-relaxed text-muted">Encerre o acesso à sua conta neste navegador.</p>
+              <button type="button" onClick={() => setConfirmingLogout(true)}
+                className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 bg-bg px-5 text-sm font-semibold text-white transition-colors hover:bg-red-500/15 hover:text-red-200 active:bg-red-500/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:active:scale-[0.97] sm:w-auto">
+                <LogOut size={16} aria-hidden="true" /> Sair da conta
+              </button>
+            </div>
+          </div>
+        </section>
       </main>
       <ConfirmDialog
         open={confirmingLogout}

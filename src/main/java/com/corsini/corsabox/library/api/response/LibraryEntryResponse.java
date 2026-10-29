@@ -15,7 +15,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 public record LibraryEntryResponse(UUID id, MediaDetailsResponse media, String status,
                                    BigDecimal rating, LocalDate watchedOn, String review,
-                                   Instant addedAt, Instant updatedAt, Progress progress) {
+                                   Instant addedAt, Instant updatedAt, Progress progress,
+                                   Instant publishedAt, boolean commentsEnabled) {
 
     public record Progress(int season, int episode) {}
 
@@ -39,6 +40,7 @@ public record LibraryEntryResponse(UUID id, MediaDetailsResponse media, String s
             e.getReview(),
             e.getCreatedAt(),
             e.getUpdatedAt(),
-            progress == null ? null : new Progress(progress.season(), progress.episode()));
+            progress == null ? null : new Progress(progress.season(), progress.episode()),
+            e.getPublishedAt(), e.isCommentsEnabled());
     }
 }

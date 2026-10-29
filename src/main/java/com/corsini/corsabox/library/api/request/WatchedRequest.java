@@ -11,5 +11,7 @@ import jakarta.validation.constraints.Size;
 public record WatchedRequest(
     @DecimalMin("0.0") @DecimalMax("5.0") BigDecimal rating,
     LocalDate watchedOn,
-    @Size(max = 5000) String review
+    @Size(max = 5000) String review,
+    Boolean publishToFeed,
+    Boolean commentsEnabled
 ) {}

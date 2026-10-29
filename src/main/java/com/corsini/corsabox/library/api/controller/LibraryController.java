@@ -100,7 +100,8 @@ public class LibraryController {
             @PathVariable String format, @PathVariable int tmdbId,
             @Valid @RequestBody WatchedRequest request) {
         var command = new MarkWatchedCommand(userId(jwt), MediaFormat.from(format), tmdbId,
-                request.rating(), request.watchedOn(), request.review());
+                request.rating(), request.watchedOn(), request.review(),
+                request.publishToFeed(), request.commentsEnabled());
         return LibraryEntryResponse.from(markAsWatched.execute(command));
     }
 
