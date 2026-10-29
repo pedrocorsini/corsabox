@@ -111,7 +111,8 @@ function FavoriteCandidates({ kind, query, selected, onToggle }: {
       : api.catalog.browse(token, kind === 'movie' ? 'movies' : kind, 'popularity', page)
     request.then(result => {
       if (cancelled) return
-      setEntries(current => [...new Map([...current, ...result.map(media => ({ id: itemKey(media), media }))].map(entry => [entry.id, entry])).values()])
+      const matches = result.filter(media => media.kind === kind)
+      setEntries(current => [...new Map([...current, ...matches.map(media => ({ id: itemKey(media), media }))].map(entry => [entry.id, entry])).values()])
       setMore(result.length > 0 && page < 500); setFailed(false)
     }).catch(() => { if (!cancelled) setFailed(true) })
       .finally(() => { if (!cancelled) setLoading(false) })
@@ -140,7 +141,7 @@ function FavoriteCandidates({ kind, query, selected, onToggle }: {
         </li>
       })}
     </ul>
-    {!entries.length && !loading && !failed && <p className="py-3 text-sm text-muted">Nenhum título encontrado. Tente outro nome.</p>}
+    {!entries.length && !loading && !failed && <p className="py-3 text-sm text-muted">{more ? 'Nenhum título desta categoria nesta página. Carregue mais resultados.' : 'Nenhum título encontrado nesta categoria. Tente outro nome.'}</p>}
     {loading && <p role="status" className="py-3 text-sm text-muted">Buscando no catálogo…</p>}
     {failed && <div className="mt-3"><ErrorBanner>Não foi possível carregar o catálogo.</ErrorBanner>
       <Button onClick={() => { setLoading(true); setAttempt(value => value + 1) }}>Tentar de novo</Button></div>}
