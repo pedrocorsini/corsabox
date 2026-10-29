@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router'
+import { Route, Routes } from 'react-router'
 import { GuestOnly, RequireAuth } from './auth/guards'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
@@ -13,6 +13,7 @@ import TitlePage from './pages/TitlePage'
 import FeedPage from './pages/FeedPage'
 import FriendsPage from './pages/FriendsPage'
 import PublicProfilePage from './pages/PublicProfilePage'
+import NotFoundPage from './pages/NotFoundPage'
 
 
 export default function App() {
@@ -35,7 +36,7 @@ export default function App() {
           <Route path="/biblioteca" element={<LibraryPage />} />
         <Route path="/perfil" element={<ProfilePage />} />
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )
 }
