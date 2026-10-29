@@ -3,7 +3,7 @@
 # 🎬 CorsaBox
 
 **Your diary of movies, series and anime.**  
-Log what you've watched and save what you want to watch.
+Log what you've watched, save what you want to watch, and share reviews with the community.
 
 [![Live App](https://img.shields.io/badge/corsabox-website-bfb21a?style=for-the-badge&labelColor=181715)](https://www.corsabox.app)
 
@@ -22,7 +22,7 @@ Log what you've watched and save what you want to watch.
 
 ## About
 
-CorsaBox is a catalog and personal diary for movies, series and anime. Browse titles, keep track of what you have watched, and organize what you want to watch. The project has a React single-page frontend and a Java/Spring Boot REST API.
+CorsaBox is a catalog and personal diary for movies, series and anime. Browse titles, keep track of what you have watched, and organize what you want to watch. Publish reviews, discover other viewers, and personalize your public profile. The project has a React single-page frontend and a Java/Spring Boot REST API.
 
 ### Features
 
@@ -32,6 +32,9 @@ CorsaBox is a catalog and personal diary for movies, series and anime. Browse ti
 - **Where to watch:** check streaming, rental and purchase availability in Brazil.
 - **Personal library:** maintain watchlist, watched and currently watching lists.
 - **Viewing diary:** rate and review watched titles, record viewing dates, and track watched episodes by series and season.
+- **Community feed:** choose which reviews to publish, react to reviews and comments with likes or dislikes, and control whether your reviews accept comments.
+- **Friends:** find people, send and manage friend requests, and visit their profiles.
+- **Public profiles:** customize your photo and bio, showcase favorite movies, series and anime, and display your published reviews. Profile pages require sign-in.
 - **Responsive experience:** landing page and app layouts for desktop and mobile, with paginated/infinite catalog and library browsing.
 
 ## Tech stack
@@ -44,15 +47,15 @@ CorsaBox is a catalog and personal diary for movies, series and anime. Browse ti
 
 ## Architecture
 
-The frontend calls the REST API. The API separates identity, catalog and library responsibilities: identity handles accounts and authentication, catalog retrieves media data from TMDB, and library stores each user's lists and viewing history in PostgreSQL. Google sign-in uses OpenID Connect validated by the backend, then opens the same CorsaBox JWT and refresh-token session used by password login. Email adapters deliver verification and password recovery messages.
+The frontend calls the REST API. The API separates identity, catalog and library responsibilities: identity handles accounts and authentication, catalog retrieves media data from TMDB, and library stores each user's lists, viewing history, published reviews and review interactions in PostgreSQL. Identity also manages friendships and public profile customization. Google sign-in uses OpenID Connect validated by the backend, then opens the same CorsaBox JWT and refresh-token session used by password login. Email adapters deliver verification and password recovery messages.
 
 ```mermaid
 flowchart LR
     U([User]) --> B[React + TypeScript<br/>Frontend]
     B -->|REST / JSON<br/>JWT for protected routes| API[Spring Boot API]
-    API --> ID[Identity context<br/>registration, login, profile]
+    API --> ID[Identity context<br/>accounts, profiles, friends]
     API --> CAT[Catalog context<br/>browse, search, details]
-    API --> LIB[Library context<br/>lists, ratings, episode logs]
+    API --> LIB[Library context<br/>lists, reviews, interactions]
     ID --> DB[(PostgreSQL)]
     LIB --> DB
     CAT -->|Catalog requests| TMDB[TMDB API]
@@ -66,7 +69,7 @@ flowchart LR
 corsabox/
 ├── src/main/java/com/corsini/corsabox/
 │   ├── config/                 # Application-wide security configuration
-│   ├── identity/               # Registration, authentication, profiles and email flows
+│   ├── identity/               # Accounts, authentication, public profiles, friendships and email
 │   │   ├── api/                # Controllers, requests, responses and exception handling
 │   │   ├── application/        # Use cases, DTOs and ports
 │   │   ├── domain/             # Identity entities, repositories and domain rules
@@ -76,7 +79,7 @@ corsabox/
 │   │   ├── application/
 │   │   ├── domain/
 │   │   └── infrastructure/
-│   └── library/                # Watchlists, watched titles and episode progress
+│   └── library/                # Lists, episode progress, review feed and interactions
 │       ├── api/
 │       ├── application/
 │       ├── domain/
@@ -89,7 +92,7 @@ corsabox/
 │       ├── auth/               # Authentication context and route guards
 │       ├── components/         # Shared UI and feature components
 │       ├── lib/                # API client, catalog/library helpers and hooks
-│       └── pages/              # Landing, catalog, title, library and account pages
+│       └── pages/              # Landing, catalog, library, feed, friends and profile pages
 ├── compose.yaml                # Local PostgreSQL service
 ├── Dockerfile
 └── pom.xml
@@ -180,14 +183,27 @@ Additional deployment settings:
 
 ## API overview
 
-The REST API provides endpoints for account registration and authentication, profile management, catalog browsing and search, and each user's media library. Trending and now-playing catalog endpoints are public; other catalog endpoints require authentication. Catalog data comes from TMDB; authenticated library endpoints use the JWT to scope watchlists, viewing records, ratings, reviews and episode progress to the current user. See Swagger UI for the full endpoint reference.
+The REST API provides endpoints for account registration and authentication, profile management, people search and friendships, catalog browsing and search, each user's media library, and the community review feed. Trending and now-playing catalog endpoints are public; other catalog endpoints require authentication. Catalog data comes from TMDB; authenticated library endpoints use the JWT to scope watchlists, viewing records, ratings, reviews and episode progress to the current user. Feed, profile and friendship endpoints also require authentication; publishing a review makes it visible to other signed-in users. See Swagger UI for the full endpoint reference.
 
-## Contributing
+## Branch workflow and contributing
 
-1. Fork the repository and create a branch: `git checkout -b feature/my-feature`.
-2. Commit your changes with a clear message.
-3. Run `./mvnw test` from the repository root, then `npm run lint` and `npm run build` from `frontend` before opening a pull request. On Windows, use `mvnw.cmd test`.
-4. Open a pull request describing what changed and why.
+- `main` is the stable branch for releases.
+- `dev` is the integration branch for ongoing development.
+- Create short-lived branches from `dev`, using names such as `feat/my-feature`, `fix/my-fix` or `docs/readme-update`.
+
+```bash
+git switch dev
+git pull --ff-only origin dev
+git switch -c feat/my-feature
+```
+
+1. Implement the change and review the diff. Keep credentials and local environment files out of commits.
+2. Validate in proportion to the change: documentation-only changes need a content and diff review; behavior changes need focused checks for the affected behavior.
+3. Before opening a pull request, run the relevant backend tests (`./mvnw test`, or `mvnw.cmd test` on Windows) and frontend checks (`npm run lint` and `npm run build` from `frontend`) for the affected areas. Reuse successful results when the relevant code and dependencies have not changed.
+4. Use a short Conventional Commit message, such as `feat: add library controls`, and open a pull request into `dev` explaining what changed and why. Include screenshots for visible frontend changes.
+5. Promote reviewed changes from `dev` to `main` through a release pull request. Delete completed feature branches after their changes are integrated.
+
+When using a coding agent, finish and review the result before explicitly authorizing commits or pull requests. Pushes, merges and deployments also require authorization for the current change, as described in [AGENTS.md](AGENTS.md).
 
 ## Credits
 
