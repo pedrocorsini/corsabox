@@ -18,25 +18,24 @@ Follow nearby code conventions. Use standard Java formatting, package names in l
 
 ## Testing
 
-Place backend tests under the matching package in `src/test/java`, using the `*Tests.java` naming pattern. Run them with `./mvnw test`. The frontend currently has lint and production-build checks rather than a configured test runner. Add focused tests when introducing behavior, especially around authentication, library rules, and API boundaries.
+When tests are requested, place backend tests under the matching package in `src/test/java`, using the `*Tests.java` naming pattern. They can be run with `./mvnw test`. The frontend currently has lint and production-build checks rather than a configured test runner. Adding or running tests is not a requirement for completing a change.
 
 ### Project-wide validation policy
 
-Keep validation proportional to the change across the entire project, including backend, frontend, configuration, and documentation.
+Default to reviewing the relevant code and diff across the entire project, including backend, frontend, configuration, and documentation. Automated validation is optional and must not delay delivery.
 
-- For low-risk changes such as copy, icons, typography, spacing, minor animation adjustments, or documentation, review the relevant code and diff. Do not routinely run builds, lint, test suites, or browser checks.
-- For behavior changes, run the smallest focused check that proves the affected behavior. Broaden validation only when the impact warrants it, a failure needs investigation, or the user explicitly requests it. Preserve necessary checks for authentication, authorization, database integrity, and other sensitive boundaries.
-- Group related edits before validating. Run full builds, full lint, and broader test suites during preparation for a PR or deployment, according to the affected areas and risk, rather than after each edit.
-- Reuse successful validation results when the relevant code and dependencies have not changed. Do not repeat checks merely because a commit, PR, or deployment is next; repeat them only when subsequent changes, failures, or unresolved concerns justify it.
-- Browser checks should cover the affected interaction and viewport. Do not routinely check desktop, tablet, mobile, and reduced motion for every frontend change.
+- Do not run tests, builds, type-checking, lint, browser checks, or other validation scripts unless the user explicitly requests those checks for the current task. Implementing a feature, fixing a bug, or requesting a commit, PR, or deployment does not implicitly request validation runs.
+- Do not ask for permission to run optional checks as a routine final step. Complete the implementation and present the result after code and diff review.
+- Preserve runtime input validation, authentication, authorization, database constraints, and other application safeguards. This policy removes mandatory verification runs, not safeguards in the implementation.
+- When the user explicitly requests validation, run only the smallest checks covering that request, group related edits first, and reuse valid earlier results. Do not broaden or repeat checks without a concrete need within the requested scope.
 
-This project policy takes precedence over optional skill validation routines. Report briefly what was checked and any material limitation; do not expand validation beyond the task's needs.
+This project policy takes precedence over optional skill validation routines. Briefly state that checks were not run when relevant; never claim unexecuted checks passed.
 
 ## Commits and Pull Requests
 
-Finish the requested changes and their proportional validation, then present the result to the user. Create commits and open pull requests only after the user's explicit confirmation of that completed result. A request to implement a feature, fix a bug, or make a hotfix does not authorize a commit or PR. Approval for a previous change does not authorize commits or PRs for subsequent work. Do not push, merge, or deploy unless the user has authorized those actions for the current completed change.
+Finish the requested changes and review the code and diff, then present the result to the user. Run validation only when explicitly requested under the policy above. Create commits and open pull requests only after the user's explicit confirmation of that completed result. A request to implement a feature, fix a bug, or make a hotfix does not authorize a commit or PR. Approval for a previous change does not authorize commits or PRs for subsequent work. Do not push, merge, or deploy unless the user has authorized those actions for the current completed change.
 
-Recent history uses short, imperative Conventional Commit-style subjects, such as `feat: add library controls` and `fix: align catalog controls`. Use prefixes like `feat`, `fix`, or `hotfix(scope)`. Pull requests should explain the change and its reason, link related issues when applicable, and include screenshots for visible frontend changes. Before opening a PR, ensure the backend tests and frontend lint/build checks relevant to the change have passed, reusing valid earlier results under the validation policy above.
+Recent history uses short, imperative Conventional Commit-style subjects, such as `feat: add library controls` and `fix: align catalog controls`. Use prefixes like `feat`, `fix`, or `hotfix(scope)`. Pull requests should explain the change and its reason and link related issues when applicable. Include existing screenshots for visible frontend changes when available; capturing them is not a prerequisite. Tests, lint, builds, and browser checks are not prerequisites for a commit, PR, or deployment. Report available validation results accurately, including when checks were not run.
 
 ## Configuration and Secrets
 
