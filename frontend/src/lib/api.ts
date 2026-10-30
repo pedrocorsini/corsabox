@@ -54,6 +54,8 @@ export type EpisodeLog = {
   watchedOn?: string
   review?: string
   updatedAt: string
+  publishedAt?: string
+  commentsEnabled?: boolean
 }
 
 export type WatchedData = { rating: number | null; watchedOn: string | null; review: string | null; publishToFeed?: boolean; commentsEnabled?: boolean }
@@ -71,6 +73,7 @@ export type FeedReview = {
   entry: LibraryEntry
   reactions: ReactionSummary
   commentCount: number
+  episode?: { season: number; episode: number } | null
 }
 export type PublicUser = Pick<User, 'id' | 'username' | 'firstName' | 'lastName' | 'createdAt'>
 export type Relationship = 'SELF' | 'NONE' | 'REQUEST_SENT' | 'REQUEST_RECEIVED' | 'FRIENDS'

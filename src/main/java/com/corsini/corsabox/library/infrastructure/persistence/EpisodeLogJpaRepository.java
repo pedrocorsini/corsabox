@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
+import jakarta.persistence.EntityManager;
 
 import com.corsini.corsabox.library.domain.EpisodeLog;
 import com.corsini.corsabox.library.domain.EpisodeLogRepository;
@@ -17,29 +18,36 @@ import com.corsini.corsabox.library.domain.Rating;
 @Repository
 public class EpisodeLogJpaRepository implements EpisodeLogRepository {
     private final SpringDataEpisodeLogRepository repo;
+    private final EntityManager em;
 
-    public EpisodeLogJpaRepository(SpringDataEpisodeLogRepository repo) {
+    public EpisodeLogJpaRepository(SpringDataEpisodeLogRepository repo, EntityManager em) {
         this.repo = repo;
+        this.em = em;
     }
 
-    private static EpisodeLogEntity toEntity(EpisodeLog l) {
+    private EpisodeLogEntity toEntity(EpisodeLog l) {
         var e = new EpisodeLogEntity();
         e.setId(l.getId());
         e.setEntryId(l.getEntryId());
+        e.setEntry(em.getReference(LibraryEntryEntity.class, l.getEntryId()));
         e.setSeasonNumber(l.getSeasonNumber());
         e.setEpisodeNumber(l.getEpisodeNumber());
         e.setRatingHalves(l.getRating() == null ? null : l.getRating().halves());
         e.setWatchedOn(l.getWatchedOn());
         e.setReview(l.getReview());
+        e.setPublishedAt(l.getPublishedAt());
+        e.setCommentsEnabled(l.isCommentsEnabled());
         e.setCreatedAt(l.getCreatedAt());
         e.setUpdatedAt(l.getUpdatedAt());
         return e;
     }
 
-    private static EpisodeLog toDomain(EpisodeLogEntity e) {
-        return EpisodeLog.restore(e.getId(), e.getEntryId(), e.getSeasonNumber(), e.getEpisodeNumber(),
+    static EpisodeLog toDomain(EpisodeLogEntity e) {
+        var log = EpisodeLog.restore(e.getId(), e.getEntryId(), e.getSeasonNumber(), e.getEpisodeNumber(),
                 e.getRatingHalves() == null ? null : new Rating(e.getRatingHalves()),
                 e.getWatchedOn(), e.getReview(), e.getCreatedAt(), e.getUpdatedAt());
+        log.restorePublication(e.getPublishedAt(), e.isCommentsEnabled());
+        return log;
     }
 
     @Override
@@ -50,7 +58,7 @@ public class EpisodeLogJpaRepository implements EpisodeLogRepository {
 
     @Override
     public void saveAll(List<EpisodeLog> logs) {
-        repo.saveAll(logs.stream().map(EpisodeLogJpaRepository::toEntity).toList());
+        repo.saveAll(logs.stream().map(this::toEntity).toList());
     }
 
     @Override

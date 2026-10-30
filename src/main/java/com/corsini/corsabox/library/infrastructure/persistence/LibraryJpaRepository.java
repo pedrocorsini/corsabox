@@ -3,8 +3,12 @@ package com.corsini.corsabox.library.infrastructure.persistence;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.HashMap;
+import java.util.Objects;
+import jakarta.persistence.EntityManager;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -12,6 +16,7 @@ import org.springframework.stereotype.Repository;
 
 import com.corsini.corsabox.catalog.domain.MediaFormat;
 import com.corsini.corsabox.identity.domain.UserId;
+import com.corsini.corsabox.identity.infrastructure.persistence.UserEntity;
 import com.corsini.corsabox.library.domain.EntryStatus;
 import com.corsini.corsabox.library.domain.LibraryEntry;
 import com.corsini.corsabox.library.domain.LibraryRepository;
@@ -23,9 +28,11 @@ import com.corsini.corsabox.library.domain.PublishedReview;
 public class LibraryJpaRepository implements LibraryRepository {
 
     private final SpringDataLibraryEntryRepository repo;
+    private final EntityManager em;
 
-    public LibraryJpaRepository(SpringDataLibraryEntryRepository repo) {
+    public LibraryJpaRepository(SpringDataLibraryEntryRepository repo, EntityManager em) {
         this.repo = repo;
+        this.em = em;
     }
 
     @Override
@@ -118,8 +125,48 @@ public class LibraryJpaRepository implements LibraryRepository {
 
     @Override
     public Page<PublishedReview> findPublishedByAuthor(UUID authorId, Pageable pageable) {
-        return repo.findPublished(authorId, pageable).map(row -> new PublishedReview(
-                toDomain(row.getEntry()), row.getAuthorId(), row.getUsername(), row.getFirstName(), row.getLastName()));
+        // Paginate the combined timeline in the database, then hydrate only this page.
+        var authorFilter = authorId == null ? "" : " and e.user_id = :author";
+        var timeline = """
+                select e.id, e.published_at from library_entries e join users u on u.id = e.user_id
+                where e.published_at is not null and e.review is not null and e.status = 'WATCHED'
+                """ + authorFilter + " union all " + """
+                select l.id, l.published_at from episode_logs l
+                join library_entries e on e.id = l.entry_id join users u on u.id = e.user_id
+                where l.published_at is not null and l.review is not null
+                """ + authorFilter;
+        var pageQuery = em.createNativeQuery("select id from (" + timeline + ") feed order by published_at desc, id desc", UUID.class);
+        var countQuery = em.createNativeQuery("select count(*) from (" + timeline + ") feed", Long.class);
+        if (authorId != null) {
+            pageQuery.setParameter("author", authorId);
+            countQuery.setParameter("author", authorId);
+        }
+        @SuppressWarnings("unchecked")
+        List<UUID> ids = pageQuery.setFirstResult(Math.toIntExact(pageable.getOffset()))
+                .setMaxResults(pageable.getPageSize()).getResultList();
+        long total = ((Number) countQuery.getSingleResult()).longValue();
+        if (ids.isEmpty()) return new PageImpl<>(List.of(), pageable, total);
+        var reviews = new HashMap<UUID, PublishedReview>();
+        em.createQuery("""
+                select e, u from LibraryEntryEntity e join UserEntity u on u.id = e.userId where e.id in :ids
+                and e.publishedAt is not null and e.review is not null and e.status = 'WATCHED'
+                """, Object[].class)
+                .setParameter("ids", ids).getResultList().forEach(row -> {
+                    var e = (LibraryEntryEntity) row[0];
+                    var u = (UserEntity) row[1];
+                    reviews.put(e.getId(), new PublishedReview(toDomain(e), u.getId(), u.getUsername(), u.getFirstName(), u.getLastName()));
+                });
+        em.createQuery("""
+                select l, e, u from EpisodeLogEntity l join l.entry e join UserEntity u on u.id = e.userId
+                where l.id in :ids and l.publishedAt is not null and l.review is not null
+                """, Object[].class).setParameter("ids", ids).getResultList().forEach(row -> {
+                    var l = (EpisodeLogEntity) row[0];
+                    var e = (LibraryEntryEntity) row[1];
+                    var u = (UserEntity) row[2];
+                    reviews.put(l.getId(), new PublishedReview(toDomain(e), u.getId(), u.getUsername(), u.getFirstName(),
+                            u.getLastName(), EpisodeLogJpaRepository.toDomain(l)));
+                });
+        return new PageImpl<>(ids.stream().map(reviews::get).filter(Objects::nonNull).toList(), pageable, total);
     }
 
     @Override

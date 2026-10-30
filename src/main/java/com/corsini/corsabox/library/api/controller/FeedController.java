@@ -31,7 +31,9 @@ public class FeedController {
     }
 
     public record Author(UUID id, String username, String firstName, String lastName) {}
-    public record Review(Author author, LibraryEntryResponse entry, ReactionSummary reactions, long commentCount) {}
+    public record Episode(int season, int episode) {}
+    public record Review(Author author, LibraryEntryResponse entry, ReactionSummary reactions, long commentCount,
+                         Episode episode) {}
     public record CommentAuthor(UUID id, String username) {}
     public record CommentResponse(UUID id, CommentAuthor author, String text, Instant createdAt, ReactionSummary reactions) {
         static CommentResponse from(ReviewInteractionService.Comment value) {
@@ -51,7 +53,8 @@ public class FeedController {
             var review = item.review();
             return new Review(
                 new Author(review.authorId(), review.username(), review.firstName(), review.lastName()),
-                LibraryEntryResponse.from(review.entry()), item.activity().reactions(), item.activity().commentCount());
+                LibraryEntryResponse.from(review), item.activity().reactions(), item.activity().commentCount(),
+                review.episode() == null ? null : new Episode(review.episode().getSeasonNumber(), review.episode().getEpisodeNumber()));
         });
     }
 

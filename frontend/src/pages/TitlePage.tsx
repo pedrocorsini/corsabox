@@ -320,7 +320,9 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
       <ConfirmDialog
         open={confirmRemove}
         title="Remover dos assistidos?"
-        description="A nota, a data e a review deste registro serão apagadas."
+        description={format === 'tv'
+          ? 'O registro e os episódios marcados, incluindo notas, datas, reviews e comentários, serão apagados.'
+          : 'A nota, a data, a review e seus comentários serão apagados.'}
         confirmLabel="Remover"
         busy={busy === 'remove'}
         onConfirm={removeWatched}
@@ -330,7 +332,7 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
       <ConfirmDialog
         open={confirmStop}
         title="Parar de acompanhar?"
-        description="Os episódios marcados, com nota, data e review, serão apagados."
+        description="Os episódios marcados, com notas, datas, reviews e comentários, serão apagados."
         confirmLabel="Parar"
         busy={busy === 'stop'}
         onConfirm={stopWatching}

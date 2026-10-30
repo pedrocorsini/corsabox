@@ -25,8 +25,8 @@ public class ListFeedUseCase {
     @Transactional(readOnly = true)
     public Page<Item> execute(UUID viewerId, UUID authorId, int page, int size) {
         var reviews = repository.findPublishedByAuthor(authorId, PageRequest.of(Math.max(0, page), Math.min(50, Math.max(1, size))));
-        var activities = interactions.activities(reviews.stream().map(review -> review.entry().getId()).toList(), viewerId);
-        return reviews.map(review -> new Item(review, activities.getOrDefault(review.entry().getId(),
+        var activities = interactions.activities(reviews.stream().map(PublishedReview::id).toList(), viewerId);
+        return reviews.map(review -> new Item(review, activities.getOrDefault(review.id(),
                 ReviewInteractionRepository.Activity.EMPTY)));
     }
 }

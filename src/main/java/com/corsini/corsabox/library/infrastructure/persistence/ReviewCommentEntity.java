@@ -14,16 +14,22 @@ import lombok.Setter;
 @Entity
 @Table(name = "review_comments", indexes = {
     @Index(name = "idx_review_comments_page", columnList = "review_id,created_at,id"),
+    @Index(name = "idx_episode_comments_page", columnList = "episode_review_id,created_at,id"),
     @Index(name = "idx_review_comments_author", columnList = "author_id")
-})
+}, check = @CheckConstraint(name = "ck_review_comment_target", constraint = "(review_id is not null and episode_review_id is null) or (review_id is null and episode_review_id is not null)"))
 @Getter @Setter @NoArgsConstructor
 public class ReviewCommentEntity {
     @Id private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "review_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "review_id")
     @OnDelete(action = OnDeleteAction.CASCADE)
     private LibraryEntryEntity review;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "episode_review_id", foreignKey = @ForeignKey(name = "fk_comment_episode_review"))
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private EpisodeLogEntity episodeReview;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "author_id", nullable = false)

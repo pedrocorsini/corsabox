@@ -6,12 +6,15 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 public interface SpringDataEpisodeLogRepository extends JpaRepository<EpisodeLogEntity, UUID> {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<EpisodeLogEntity> findByEntryIdAndSeasonNumberAndEpisodeNumber(UUID entryId, int season, int episode);
 
     List<EpisodeLogEntity> findByEntryIdOrderBySeasonNumberAscEpisodeNumberAsc(UUID entryId);
