@@ -10,6 +10,7 @@ import java.util.UUID;
 import com.corsini.corsabox.catalog.api.response.MediaDetailsResponse;
 import com.corsini.corsabox.library.domain.EpisodeProgress;
 import com.corsini.corsabox.library.domain.LibraryEntry;
+import com.corsini.corsabox.library.domain.PublishedReview;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
@@ -19,6 +20,16 @@ public record LibraryEntryResponse(UUID id, MediaDetailsResponse media, String s
                                    Instant publishedAt, boolean commentsEnabled) {
 
     public record Progress(int season, int episode) {}
+
+    public static LibraryEntryResponse from(PublishedReview review) {
+        var entry = from(review.entry());
+        var episode = review.episode();
+        if (episode == null) return entry;
+        return new LibraryEntryResponse(episode.getId(), entry.media(), "watched",
+                episode.getRating() == null ? null : episode.getRating().value(), episode.getWatchedOn(),
+                episode.getReview(), episode.getCreatedAt(), episode.getUpdatedAt(), null,
+                episode.getPublishedAt(), episode.isCommentsEnabled());
+    }
 
     public static LibraryEntryResponse from(LibraryEntry e) {
         return from(e, null);

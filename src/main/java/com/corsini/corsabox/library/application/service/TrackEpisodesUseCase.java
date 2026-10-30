@@ -9,6 +9,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.corsini.corsabox.catalog.domain.MediaFormat;
 import com.corsini.corsabox.identity.domain.UserId;
@@ -38,6 +39,7 @@ public class TrackEpisodesUseCase {
         this.episodeLookup = episodeLookup;
     }
 
+    @Transactional
     public EpisodeLog log(LogEpisodeCommand c) {
         var episode = episodeLookup.season(c.tmdbId(), c.season()).stream()
                 .filter(e -> e.number() == c.episode()).findFirst()
@@ -54,6 +56,8 @@ public class TrackEpisodesUseCase {
                 })
                 .orElseGet(() -> EpisodeLog.create(entry.getId(), c.season(), c.episode(),
                         rating, c.watchedOn(), c.review()));
+        log.setPublication(c.publishToFeed() == null ? log.getPublishedAt() != null : c.publishToFeed(),
+                c.commentsEnabled() == null ? log.isCommentsEnabled() : c.commentsEnabled());
         return logs.save(log);
     }
 
@@ -84,6 +88,7 @@ public class TrackEpisodesUseCase {
                 .map(e -> logs.findByEntry(e.getId())).orElse(List.of());
     }
 
+    @Transactional
     public void remove(UUID userId, int tmdbId, int season, int episode) {
         var entry = entries.find(new UserId(userId), tmdbId, MediaFormat.TV)
                 .orElseThrow(EntryNotFoundException::new);

@@ -18,6 +18,20 @@ public class EpisodeLog {
     private LocalDate watchedOn;
     private String review;
     private Instant updatedAt;
+    private Instant publishedAt;
+    private boolean commentsEnabled = true;
+
+    public void setPublication(boolean publish, boolean commentsEnabled) {
+        if (publish && review == null)
+            throw new IllegalArgumentException("Write a review before publishing it");
+        this.publishedAt = publish ? (publishedAt == null ? Instant.now() : publishedAt) : null;
+        this.commentsEnabled = commentsEnabled;
+    }
+
+    public void restorePublication(Instant publishedAt, boolean commentsEnabled) {
+        this.publishedAt = publishedAt;
+        this.commentsEnabled = commentsEnabled;
+    }
 
     private EpisodeLog(UUID id, UUID entryId, int seasonNumber, int episodeNumber,
                        Rating rating, LocalDate watchedOn, String review,
@@ -56,6 +70,7 @@ public class EpisodeLog {
         this.rating = rating;
         this.watchedOn = watchedOn;
         this.review = text;
+        if (text == null) this.publishedAt = null;
         this.updatedAt = Instant.now();
     }
 }

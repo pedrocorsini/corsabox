@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type Ref } from 'react'
 import { Check } from 'lucide-react'
+import { useSearchParams } from 'react-router'
 import { useAuth } from '../auth/useAuth'
 import { api, type EpisodeLog } from '../lib/api'
 import type { Episode, SeasonDetails, SeasonSummary } from '../lib/catalog'
@@ -25,6 +26,11 @@ function lastWatched(logs: EpisodeLog[]) {
 
 export function SeasonsSection({ tmdbId, seasons, onChange }: Props) {
   const { token } = useAuth()
+  const [params] = useSearchParams()
+  const requestedSeason = params.has('temporada') ? Number(params.get('temporada')) : NaN
+  const requestedEpisode = Number(params.get('episodio'))
+  const target = seasons.some((s) => s.number === requestedSeason) && Number.isInteger(requestedEpisode) && requestedEpisode > 0
+    ? { season: requestedSeason, episode: requestedEpisode } : null
   const progress = useEpisodeProgress(tmdbId, onChange)
   const all = Object.values(progress.logs)
 
@@ -34,18 +40,22 @@ export function SeasonsSection({ tmdbId, seasons, onChange }: Props) {
   const regularDone = all.filter((l) => l.season > 0).length
   const resume = lastWatched(all)
 
-  const [active, setActive] = useState<number | null>(null)
+  const [active, setActive] = useState<number | null>(target?.season ?? null)
   if (active === null && !progress.loading) setActive(resume?.season ?? ordered[0].number)
   const current = active ?? ordered[0].number
 
   const [data, setData] = useState<Record<number, SeasonDetails | 'error'>>({})
   const [attempt, setAttempt] = useState(0)
-  const [open, setOpen] = useState<string | null>(null)
+  const [open, setOpen] = useState<string | null>(target ? episodeKey(target.season, target.episode) : null)
   const [busy, setBusy] = useState<string | null>(null)
   const [confirm, setConfirm] = useState<{ season: number; episode: number } | null>(null)
   const tabs = useRef<HTMLDivElement>(null)
 
   const loaded = data[current] !== undefined
+  const targetRow = useRef<HTMLLIElement>(null)
+  useEffect(() => {
+    if (loaded && !progress.loading && targetRow.current) targetRow.current.scrollIntoView({ block: 'center' })
+  }, [loaded, progress.loading])
   useEffect(() => {
     if (!token || loaded) return
     let cancelled = false
@@ -128,7 +138,7 @@ export function SeasonsSection({ tmdbId, seasons, onChange }: Props) {
   }
 
   return (
-    <section className="mt-10">
+    <section id="temporadas" className="mt-10">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-1">
         <h2 className="text-xl font-semibold">Temporadas</h2>
         {!progress.loading && !progress.loadFailed && (
@@ -207,6 +217,7 @@ export function SeasonsSection({ tmdbId, seasons, onChange }: Props) {
               const key = episodeKey(current, ep.number)
               return (
                 <EpisodeRow key={key} ep={ep} log={progress.logs[key]}
+                  targetRef={target?.season === current && target.episode === ep.number ? targetRow : undefined}
                   open={open === key} saving={busy === key}
                   canFill={season.episodes.some((e) =>
                     e.number < ep.number && hasAired(e.airDate) && !progress.logs[episodeKey(current, e.number)])}
@@ -223,7 +234,7 @@ export function SeasonsSection({ tmdbId, seasons, onChange }: Props) {
       <ConfirmDialog
         open={confirm !== null}
         title="Desmarcar episódio?"
-        description="A nota, a data e a review deste episódio serão apagadas."
+        description="A nota, a data, a review e seus comentários serão apagados."
         confirmLabel="Desmarcar"
         onConfirm={() => {
           if (confirm) void progress.clear(confirm.season, confirm.episode)
@@ -236,6 +247,7 @@ export function SeasonsSection({ tmdbId, seasons, onChange }: Props) {
 }
 
 type RowProps = {
+  targetRef?: Ref<HTMLLIElement>
   ep: Episode
   log?: EpisodeLog
   open: boolean
@@ -247,7 +259,7 @@ type RowProps = {
   onFill: () => void
 }
 
-function EpisodeRow({ ep, log, open, saving, canFill, onToggle, onOpen, onSave, onFill }: RowProps) {
+function EpisodeRow({ ep, log, open, saving, canFill, onToggle, onOpen, onSave, onFill, targetRef }: RowProps) {
   const aired = hasAired(ep.airDate)
   const meta = [
     ep.airDate ? (aired ? formatDay(ep.airDate) : `Estreia em ${formatDay(ep.airDate)}`) : null,
@@ -255,7 +267,7 @@ function EpisodeRow({ ep, log, open, saving, canFill, onToggle, onOpen, onSave, 
   ].filter(Boolean).join(' · ')
 
   return (
-    <li className="bg-surface">
+    <li ref={targetRef} className="bg-surface">
       <div className="grid grid-cols-[2.5rem_1fr_auto] items-center gap-3 p-3 md:gap-4 md:p-4">
         <button type="button" aria-pressed={!!log} disabled={!aired} onClick={onToggle}
           aria-label={`${log ? 'Desmarcar' : 'Marcar'} episódio ${ep.number}`}
@@ -290,7 +302,9 @@ function EpisodeRow({ ep, log, open, saving, canFill, onToggle, onOpen, onSave, 
             </button>
           )}
           <WatchedForm
-            initial={{ rating: log?.rating ?? null, watchedOn: log?.watchedOn ?? '', review: log?.review ?? '' }}
+            allowPublication
+            initial={{ rating: log?.rating ?? null, watchedOn: log?.watchedOn ?? '', review: log?.review ?? '',
+              publishToFeed: !!log?.publishedAt, commentsEnabled: log?.commentsEnabled ?? true }}
             submitLabel="Salvar"
             busy={saving}
             onSubmit={onSave}

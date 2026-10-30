@@ -146,7 +146,7 @@ public class LibraryController {
     public EpisodeLogResponse logEpisode(@AuthenticationPrincipal Jwt jwt, @PathVariable int tmdbId,
             @PathVariable int season, @PathVariable int episode, @Valid @RequestBody WatchedRequest r) {
         var command = new LogEpisodeCommand(userId(jwt), tmdbId, season, episode,
-                r.rating(), r.watchedOn(), r.review());
+                r.rating(), r.watchedOn(), r.review(), r.publishToFeed(), r.commentsEnabled());
         return EpisodeLogResponse.from(track.log(command));
     }
 
