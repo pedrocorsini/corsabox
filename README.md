@@ -183,6 +183,10 @@ Additional deployment settings:
 
 ## API overview
 
+Episode reviews are written from the episode's **Detalhes** form. Publishing to the feed is optional, with the same comment and reaction controls as title reviews. Existing episode reviews stay private.
+
+Before deploying this feature to an existing PostgreSQL database, stop application writes and run [`enable-episode-reviews.sql`](src/main/resources/db/maintenance/enable-episode-reviews.sql). The script preserves existing records and updates the interaction constraints that Hibernate `ddl-auto=update` cannot replace. Fresh databases use the entity mappings directly. The script includes rollback guidance; Flyway remains disabled.
+
 The REST API provides endpoints for account registration and authentication, profile management, people search and friendships, catalog browsing and search, each user's media library, and the community review feed. Trending and now-playing catalog endpoints are public; other catalog endpoints require authentication. Catalog data comes from TMDB; authenticated library endpoints use the JWT to scope watchlists, viewing records, ratings, reviews and episode progress to the current user. Feed, profile and friendship endpoints also require authentication; publishing a review makes it visible to other signed-in users. See Swagger UI for the full endpoint reference.
 
 ## Branch workflow and contributing
