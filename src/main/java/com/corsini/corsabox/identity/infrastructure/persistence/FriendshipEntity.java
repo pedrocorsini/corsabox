@@ -2,7 +2,6 @@ package com.corsini.corsabox.identity.infrastructure.persistence;
 
 import java.time.Instant;
 import java.util.UUID;
-import org.hibernate.annotations.Check;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import com.corsini.corsabox.identity.domain.Friendship.Status;
@@ -16,8 +15,7 @@ import lombok.Setter;
         columnNames = {"first_user_id", "second_user_id"}), indexes = {
     @Index(name = "idx_friendship_first_status", columnList = "first_user_id,status"),
     @Index(name = "idx_friendship_second_status", columnList = "second_user_id,status")
-})
-@Check(constraints = "first_user_id < second_user_id and (requested_by = first_user_id or requested_by = second_user_id)")
+}, check = @CheckConstraint(constraint = "first_user_id < second_user_id and (requested_by = first_user_id or requested_by = second_user_id)"))
 @Getter @Setter @NoArgsConstructor
 public class FriendshipEntity {
     @Id private UUID id;
