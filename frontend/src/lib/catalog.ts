@@ -28,6 +28,8 @@ export type MediaDetails = CatalogItem & {
   cast?: string[]
   trailerKey?: string
   seasons?: SeasonSummary[]
+  tmdbRating?: number | null
+  tmdbVoteCount?: number | null
 }
 
 export const PERIODS = [
@@ -91,6 +93,8 @@ export type Episode = {
   airDate?: string | null
   runtimeMinutes?: number | null
   stillUrl?: string | null
+  tmdbRating?: number | null
+  tmdbVoteCount?: number | null
 }
 
 export type SeasonDetails = { number: number; name?: string | null; episodes: Episode[] }

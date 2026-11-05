@@ -8,6 +8,7 @@ import { Poster } from '../components/Poster'
 import { RatingMeter } from '../components/Rating'
 import { SeasonsSection } from '../components/SeasonsSection'
 import { TrailerDialog } from '../components/TrailerDialog'
+import { TmdbRating } from '../components/TmdbRating'
 import { WhereToWatchDialog } from '../components/WhereToWatchDialog'
 import { WatchedForm, type WatchedPayload } from '../components/WatchedForm'
 import { Button, ErrorBanner } from '../components/ui'
@@ -227,6 +228,10 @@ function TitleView({ format, tmdbId }: { format: MediaFormat; tmdbId: number }) 
                   {item.title}
                   {item.year && <span className="ml-3 font-normal text-muted">({item.year})</span>}
                 </h1>
+
+                <div className="mt-3">
+                  <TmdbRating value={item.tmdbRating} votes={item.tmdbVoteCount} />
+                </div>
 
                 <p className="mt-6 max-w-[60ch] text-[1.0625rem] leading-[1.6] md:text-lg">
                   {item.overview ?? <span className="text-muted">Sem sinopse disponível.</span>}

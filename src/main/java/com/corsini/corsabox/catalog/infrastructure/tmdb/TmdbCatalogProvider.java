@@ -279,7 +279,7 @@ public class TmdbCatalogProvider implements CatalogProvider {
                             .toList();
             return new MediaDetails(item, released, worldwideRelease, brazilTheatricalRelease, runtime,
                     genres, directors, writers, creators, castNames,
-                    trailerKey(d.videos()), seasons);
+                    trailerKey(d.videos()), seasons, rating(d.voteAverage(), d.voteCount()), d.voteCount());
         } catch (HttpClientErrorException.NotFound e) {
             throw new CatalogItemNotFoundException(format, id);
         } catch (RestClientException e) {
@@ -372,7 +372,8 @@ public class TmdbCatalogProvider implements CatalogProvider {
             var episodes = s.episodes() == null ? List.<EpisodeItem>of()
                     : s.episodes().stream()
                             .map(e -> new EpisodeItem(e.number(), text(e.name()), text(e.overview()),
-                                    parseDate(e.airDate()), positive(e.runtime()), image(e.stillPath(), "w300")))
+                                    parseDate(e.airDate()), positive(e.runtime()), image(e.stillPath(), "w300"),
+                                    rating(e.voteAverage(), e.voteCount()), e.voteCount()))
                             .toList();
             return new SeasonDetails(s.number(), text(s.name()), episodes);
         } catch (HttpClientErrorException.NotFound e) {
@@ -381,6 +382,11 @@ public class TmdbCatalogProvider implements CatalogProvider {
             log.error("Falha ao consultar a TMDB", e);
             throw new CatalogUnavailableException(e);
         }
+    }
+
+    private static Double rating(Double average, Integer votes) {
+        return votes != null && votes > 0 && average != null && Double.isFinite(average)
+                && average >= 0 && average <= 10 ? average : null;
     }
 
     private static String trailerKey(TmdbVideos videos) {
@@ -553,7 +559,9 @@ public class TmdbCatalogProvider implements CatalogProvider {
             TmdbCredits credits,
             @JsonProperty("release_dates") TmdbReleaseDates releaseDates,
             List<TmdbSeasonStub> seasons,
-            TmdbVideos videos) {
+            TmdbVideos videos,
+            @JsonProperty("vote_average") Double voteAverage,
+            @JsonProperty("vote_count") Integer voteCount) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -574,7 +582,9 @@ public class TmdbCatalogProvider implements CatalogProvider {
     @JsonIgnoreProperties(ignoreUnknown = true)
     record TmdbEpisode(@JsonProperty("episode_number") int number, String name, String overview,
             @JsonProperty("air_date") String airDate, Integer runtime,
-            @JsonProperty("still_path") String stillPath) {
+            @JsonProperty("still_path") String stillPath,
+            @JsonProperty("vote_average") Double voteAverage,
+            @JsonProperty("vote_count") Integer voteCount) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

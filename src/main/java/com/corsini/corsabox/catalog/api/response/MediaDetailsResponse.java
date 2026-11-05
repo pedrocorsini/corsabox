@@ -13,7 +13,8 @@ public record MediaDetailsResponse(int id, String title, String kind, String for
                                    LocalDate releaseDate, LocalDate worldwideReleaseDate,
                                    LocalDate brazilTheatricalReleaseDate, Integer runtimeMinutes, List<String> genres,
                                    List<String> directors, List<String> writers,
-                                   List<String> creators, List<String> cast, String trailerKey, List<SeasonSummaryResponse> seasons) {
+                                   List<String> creators, List<String> cast, String trailerKey, List<SeasonSummaryResponse> seasons,
+                                   Double tmdbRating, Integer tmdbVoteCount) {
     public static MediaDetailsResponse from(MediaDetails d) {
         var i = d.item();
         return new MediaDetailsResponse(
@@ -21,6 +22,6 @@ public record MediaDetailsResponse(int id, String title, String kind, String for
             i.year(), i.overview(), i.posterUrl(), i.backdropUrl(),
             d.releaseDate(), d.worldwideReleaseDate(), d.brazilTheatricalReleaseDate(), d.runtimeMinutes(), d.genres(),
             d.directors(), d.writers(), d.creators(), d.cast(), d.trailerKey(),
-            d.seasons().stream().map(SeasonSummaryResponse::from).toList());
+            d.seasons().stream().map(SeasonSummaryResponse::from).toList(), d.tmdbRating(), d.tmdbVoteCount());
     }
 }

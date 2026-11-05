@@ -6,4 +6,5 @@ import java.util.List;
 public record MediaDetails(CatalogItem item, LocalDate releaseDate, LocalDate worldwideReleaseDate,
                            LocalDate brazilTheatricalReleaseDate, Integer runtimeMinutes,
                            List<String> genres, List<String> directors, List<String> writers,
-                           List<String> creators, List<String> cast, String trailerKey, List<SeasonSummary> seasons) {}
+                           List<String> creators, List<String> cast, String trailerKey, List<SeasonSummary> seasons,
+                           Double tmdbRating, Integer tmdbVoteCount) {}

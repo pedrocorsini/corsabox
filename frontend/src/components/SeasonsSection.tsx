@@ -8,6 +8,7 @@ import { EMPTY_LOG, episodeKey, useEpisodeProgress } from '../lib/episodes'
 import { formatDay, formatRuntime, todayISO } from '../lib/format'
 import { ConfirmDialog } from './ConfirmDialog'
 import { RatingMeter } from './Rating'
+import { TmdbRating } from './TmdbRating'
 import { WatchedForm, type WatchedPayload } from './WatchedForm'
 import { Button, ErrorBanner } from './ui'
 
@@ -278,6 +279,9 @@ function EpisodeRow({ ep, log, open, saving, canFill, onToggle, onOpen, onSave, 
         <div className="min-w-0">
           <p className="truncate font-semibold">{ep.name ?? `Episódio ${ep.number}`}</p>
           {meta && <p className="text-[15px] text-muted">{meta}</p>}
+          <div className="mt-1">
+            <TmdbRating value={ep.tmdbRating} votes={ep.tmdbVoteCount} />
+          </div>
           {log && (typeof log.rating === 'number' || log.watchedOn) && (
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
               {typeof log.rating === 'number' && <RatingMeter value={log.rating} size="sm" />}

@@ -66,7 +66,7 @@ class PublicProfileTests {
             new CatalogItem(456, "Uma série", MediaKind.TV, MediaFormat.TV, 2025, null, null, null),
             new CatalogItem(789, "Um anime", MediaKind.ANIME, MediaFormat.TV, 2024, null, null, null));
         for (var item : items) org.mockito.Mockito.when(catalog.details(item.format(), item.id()))
-            .thenReturn(new MediaDetails(item, null, null, null, null, List.of(), List.of(), List.of(), List.of(), List.of(), null, List.of()));
+            .thenReturn(new MediaDetails(item, null, null, null, null, List.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), null, null));
         var refs = items.stream().map(item -> new PublicProfileService.MediaReference(item.format().path(), item.id())).toList();
         var auth = jwt().jwt(j -> j.subject(id.toString()));
         mvc.perform(put("/api/users/me/catalog-favorites").with(auth).contentType("application/json")
